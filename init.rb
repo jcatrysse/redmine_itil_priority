@@ -16,11 +16,18 @@ Redmine::Plugin.register :redmine_itil_priority do
            }
 end
 
+if Rails::VERSION::MAJOR >= 5
+  version = "#{Rails::VERSION::MAJOR}.#{Rails::VERSION::MINOR}".to_f
+  preparation_class = ActiveSupport::Reloader
+else
+  preparation_class = ActionDispatch::Callbacks
+end
+
 # Extra classes
-require_dependency 'redmine_itil_priority'
+require File.dirname(__FILE__) + '/lib/redmine_itil_priority'
 
 # Patch of core classes
-ActiveSupport::Reloader.to_prepare do
+preparation_class.to_prepare do
   require_dependency 'redmine_itil_priority/issue_patch'
 end
 
