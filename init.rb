@@ -16,12 +16,20 @@ Redmine::Plugin.register :redmine_itil_priority do
            }
 end
 
-# Extra classes
-if Rails.configuration.respond_to?(:autoloader) && Rails.configuration.autoloader == :zeitwerk
-  Rails.autoloaders.each { |loader| loader.ignore(File.dirname(__FILE__) + '/lib') }
+if Rails::VERSION::MAJOR >= 5
+  version = "#{Rails::VERSION::MAJOR}.#{Rails::VERSION::MINOR}".to_f
+  preparation_class = ActiveSupport::Reloader
+else
+  preparation_class = ActionDispatch::Callbacks
 end
 
+# Extra classes
 require File.dirname(__FILE__) + '/lib/redmine_itil_priority'
+
+# Patch of core classes
+preparation_class.to_prepare do
+  require_dependency 'redmine_itil_priority/issue_patch'
+end
 
 # Little hack for using the "deface" gem in redmine:
 # - redmine plugins are not railties nor engines, so deface overrides in app/overrides/ are not detected automatically
