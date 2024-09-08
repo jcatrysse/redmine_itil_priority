@@ -31,6 +31,13 @@ preparation_class.to_prepare do
   require_dependency 'redmine_itil_priority/issue_patch'
 end
 
+if Rails.configuration.respond_to?(:autoloader) && Rails.configuration.autoloader == :zeitwerk
+  Rails.autoloaders.each do |loader|
+    loader.ignore(File.dirname(__FILE__) + '/lib')
+    loader.ignore(File.dirname(__FILE__) + '/app/overrides')
+  end
+end
+
 # Little hack for using the "deface" gem in redmine:
 # - redmine plugins are not railties nor engines, so deface overrides in app/overrides/ are not detected automatically
 # - deface doesn"t support direct loading anymore ; it unloads everything at boot so that reload in dev works
