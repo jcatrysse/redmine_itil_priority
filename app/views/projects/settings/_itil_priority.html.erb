@@ -1,0 +1,79 @@
+<% RedmineItilPriority.log "[ITIL] rendering projects/settings/_itil_priority" %>
+<style>
+  .itil-priority-mapping { border-collapse:collapse; border-spacing:0; }
+  .itil-priority-mapping th, .itil-priority-mapping td { padding:10px 20px; border:1px solid #bbb; }
+  .itil-priority-mapping th.no-border { border:0; }
+  .itil-priority-mapping.itil-disabled { opacity:0.5; }
+  .itil-priority-mapping.itil-hidden { display:none; }
+</style>
+<% key = "plugin_redmine_itil_priority_project_#{@project.id}" %>
+<% Setting.available_settings[key] ||= { 'serialized' => true, 'default' => {} } %>
+<% project_settings = Setting.find_by(name: key)&.value || {} %>
+<% tracker_settings = project_settings['tracker_settings'] || {} %>
+<% default_settings = Setting['plugin_redmine_itil_priority'] || {} %>
+<%= form_with url: project_itil_priority_settings_path(@project), method: :post, local: true do %>
+  <% @project.trackers.each do |tracker| %>
+    <% raw_settings = tracker_settings[tracker.id.to_s] || {} %>
+    <% mode = raw_settings['mode'] || 'default' %>
+    <% t_settings = default_settings.merge(raw_settings) %>
+    <% disabled = mode != 'custom' %>
+    <fieldset>
+      <legend><%= tracker.name %></legend>
+      <p>
+        <label for="tracker_settings_<%= tracker.id %>_mode"><%= l(:field_mode) %></label>
+        <%= select_tag "tracker_settings[#{tracker.id}][mode]", options_for_select([[l(:label_mode_inactive), 'inactive'], [l(:label_mode_default), 'default'], [l(:label_mode_custom), 'custom']], mode), id: "tracker_settings_#{tracker.id}_mode" %>
+      </p>
+      <table class="itil-priority-mapping <%= 'itil-disabled' if mode == 'default' %> <%= 'itil-hidden' if mode == 'inactive' %>">
+        <tr>
+          <th class="no-border"></th>
+          <th><%= l(:field_urgency) %><br><%= text_field_tag "tracker_settings[#{tracker.id}][label_urgency_1]", t_settings["label_urgency_1"], disabled: disabled, data: { default_value: default_settings["label_urgency_1"] } %></th>
+          <th><%= l(:field_urgency) %><br><%= text_field_tag "tracker_settings[#{tracker.id}][label_urgency_2]", t_settings["label_urgency_2"], disabled: disabled, data: { default_value: default_settings["label_urgency_2"] } %></th>
+          <th><%= l(:field_urgency) %><br><%= text_field_tag "tracker_settings[#{tracker.id}][label_urgency_3]", t_settings["label_urgency_3"], disabled: disabled, data: { default_value: default_settings["label_urgency_3"] } %></th>
+        </tr>
+        <tr>
+          <th><%= l(:field_impact) %> <%= text_field_tag "tracker_settings[#{tracker.id}][label_impact_1]", t_settings["label_impact_1"], disabled: disabled, data: { default_value: default_settings["label_impact_1"] } %></th>
+          <th><%= select_tag "tracker_settings[#{tracker.id}][priority_i1_u1]", options_from_collection_for_select(IssuePriority.active, :id, :name, t_settings["priority_i1_u1"]), disabled: disabled, data: { default_value: default_settings["priority_i1_u1"] } %></th>
+          <th><%= select_tag "tracker_settings[#{tracker.id}][priority_i1_u2]", options_from_collection_for_select(IssuePriority.active, :id, :name, t_settings["priority_i1_u2"]), disabled: disabled, data: { default_value: default_settings["priority_i1_u2"] } %></th>
+          <th><%= select_tag "tracker_settings[#{tracker.id}][priority_i1_u3]", options_from_collection_for_select(IssuePriority.active, :id, :name, t_settings["priority_i1_u3"]), disabled: disabled, data: { default_value: default_settings["priority_i1_u3"] } %></th>
+        </tr>
+        <tr>
+          <th><%= l(:field_impact) %> <%= text_field_tag "tracker_settings[#{tracker.id}][label_impact_2]", t_settings["label_impact_2"], disabled: disabled, data: { default_value: default_settings["label_impact_2"] } %></th>
+          <th><%= select_tag "tracker_settings[#{tracker.id}][priority_i2_u1]", options_from_collection_for_select(IssuePriority.active, :id, :name, t_settings["priority_i2_u1"]), disabled: disabled, data: { default_value: default_settings["priority_i2_u1"] } %></th>
+          <th><%= select_tag "tracker_settings[#{tracker.id}][priority_i2_u2]", options_from_collection_for_select(IssuePriority.active, :id, :name, t_settings["priority_i2_u2"]), disabled: disabled, data: { default_value: default_settings["priority_i2_u2"] } %></th>
+          <th><%= select_tag "tracker_settings[#{tracker.id}][priority_i2_u3]", options_from_collection_for_select(IssuePriority.active, :id, :name, t_settings["priority_i2_u3"]), disabled: disabled, data: { default_value: default_settings["priority_i2_u3"] } %></th>
+        </tr>
+        <tr>
+          <th><%= l(:field_impact) %> <%= text_field_tag "tracker_settings[#{tracker.id}][label_impact_3]", t_settings["label_impact_3"], disabled: disabled, data: { default_value: default_settings["label_impact_3"] } %></th>
+          <th><%= select_tag "tracker_settings[#{tracker.id}][priority_i3_u1]", options_from_collection_for_select(IssuePriority.active, :id, :name, t_settings["priority_i3_u1"]), disabled: disabled, data: { default_value: default_settings["priority_i3_u1"] } %></th>
+          <th><%= select_tag "tracker_settings[#{tracker.id}][priority_i3_u2]", options_from_collection_for_select(IssuePriority.active, :id, :name, t_settings["priority_i3_u2"]), disabled: disabled, data: { default_value: default_settings["priority_i3_u2"] } %></th>
+          <th><%= select_tag "tracker_settings[#{tracker.id}][priority_i3_u3]", options_from_collection_for_select(IssuePriority.active, :id, :name, t_settings["priority_i3_u3"]), disabled: disabled, data: { default_value: default_settings["priority_i3_u3"] } %></th>
+        </tr>
+      </table>
+    </fieldset>
+  <% end %>
+  <%= submit_tag l(:button_save) %>
+<% end %>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('select[id$="_mode"]').forEach(function(select) {
+    function toggle() {
+      var fieldset = select.closest('fieldset');
+      var disabled = select.value !== 'custom';
+      fieldset.querySelectorAll('input, select').forEach(function(input) {
+        if (input === select) { return; }
+        input.disabled = disabled;
+        if (select.value === 'default' && input.dataset.defaultValue !== undefined) {
+          input.value = input.dataset.defaultValue;
+        }
+      });
+      var table = fieldset.querySelector('.itil-priority-mapping');
+      if (table) {
+        table.classList.toggle('itil-disabled', select.value === 'default');
+        table.classList.toggle('itil-hidden', select.value === 'inactive');
+      }
+    }
+    select.addEventListener('change', toggle);
+    toggle();
+  });
+});
+</script>

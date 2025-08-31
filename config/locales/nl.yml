@@ -1,0 +1,13 @@
+nl:
+  project_module_itil_priority: "ITIL-prioriteit"
+  field_impact: "Impact"
+  field_urgency: "Urgentie"
+  label_itil_priority: "ITIL-prioriteit"
+  label_impact: "Impact"
+  label_urgency: "Urgentie"
+  field_mode: "Modus"
+  field_default_tracker_mode: "Standaard trackermodus"
+  label_mode_inactive: "Inactief"
+  label_mode_default: "Generieke instellingen gebruiken"
+  label_mode_custom: "Aangepast"
+  label_language: "Taal"

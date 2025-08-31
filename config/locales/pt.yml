@@ -1,0 +1,13 @@
+pt:
+  project_module_itil_priority: "Prioridade ITIL"
+  field_impact: "Impacto"
+  field_urgency: "Urgência"
+  label_itil_priority: "Prioridade ITIL"
+  label_impact: "Impacto"
+  label_urgency: "Urgência"
+  field_mode: "Modo"
+  field_default_tracker_mode: "Comportamento padrão do rastreador"
+  label_mode_inactive: "Inativo"
+  label_mode_default: "Usar configurações genéricas"
+  label_mode_custom: "Personalizado"
+  label_language: "Idioma"

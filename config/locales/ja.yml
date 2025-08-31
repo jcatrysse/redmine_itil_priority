@@ -1,0 +1,13 @@
+ja:
+  project_module_itil_priority: "ITIL優先度"
+  field_impact: "影響"
+  field_urgency: "緊急度"
+  label_itil_priority: "ITIL優先度"
+  label_impact: "影響"
+  label_urgency: "緊急度"
+  field_mode: "モード"
+  field_default_tracker_mode: "トラッカーのデフォルト動作"
+  label_mode_inactive: "無効"
+  label_mode_default: "一般設定を使用"
+  label_mode_custom: "カスタム"
+  label_language: "言語"

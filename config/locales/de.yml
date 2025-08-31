@@ -1,0 +1,13 @@
+de:
+  project_module_itil_priority: "ITIL-Priorität"
+  field_impact: "Auswirkung"
+  field_urgency: "Dringlichkeit"
+  label_itil_priority: "ITIL-Priorität"
+  label_impact: "Auswirkung"
+  label_urgency: "Dringlichkeit"
+  field_mode: "Modus"
+  field_default_tracker_mode: "Standardverhalten des Trackers"
+  label_mode_inactive: "Inaktiv"
+  label_mode_default: "Generische Einstellungen verwenden"
+  label_mode_custom: "Benutzerdefiniert"
+  label_language: "Sprache"

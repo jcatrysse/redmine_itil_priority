@@ -1,0 +1,21 @@
+<% sample = @issues.first %>
+<% project = @project || sample.project %>
+<% tracker = sample.tracker %>
+<% if RedmineItilPriority.settings_for(project, tracker) %>
+  <p>
+    <label><%= l(:field_urgency) %></label>
+    <%= select_tag 'issue[urgency_id]',
+                   options_for_select(
+                     [[l(:label_no_change_option), ''], [l(:label_none), 'none']] +
+                     RedmineItilPriority.urgency_options(project, tracker)
+                   ) %>
+  </p>
+  <p>
+    <label><%= l(:field_impact) %></label>
+    <%= select_tag 'issue[impact_id]',
+                   options_for_select(
+                     [[l(:label_no_change_option), ''], [l(:label_none), 'none']] +
+                     RedmineItilPriority.impact_options(project, tracker)
+                   ) %>
+  </p>
+<% end %>
