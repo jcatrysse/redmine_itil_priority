@@ -20,6 +20,7 @@ module RedmineItilPriority
   def clear_cache
     Rails.cache.delete_matched(/\A#{CACHE_PREFIX}\//)
     @settings_cache&.clear
+    @enabled_cache&.clear
   end
 
   def log(message = nil, level: :info, &block)
@@ -100,23 +101,27 @@ module RedmineItilPriority
   # checked as well. If no project is given, any active project with the module
   # enabled and configured trackers will enable the feature.
   def enabled_for_project?(project)
-    if project
-      projects = if project.respond_to?(:self_and_descendants)
-                   project.self_and_descendants.includes(:trackers)
-                 else
-                   project.trackers.load
-                   [project]
-                 end
-      projects.any? do |proj|
-        next false unless proj.module_enabled?(:itil_priority)
-        proj.trackers.any? { |t| settings_for(proj, t) }
-      end
-    else
-      return true unless defined?(Project)
-      Project.active.has_module(:itil_priority).includes(:trackers).any? do |proj|
-        proj.trackers.any? { |t| settings_for(proj, t) }
-      end
-    end
+    @enabled_cache ||= {}
+    cache_id = project ? project.id : :all
+    return @enabled_cache[cache_id] if @enabled_cache.key?(cache_id)
+
+    @enabled_cache[cache_id] = if project
+                                  projects = if project.respond_to?(:self_and_descendants)
+                                               project.self_and_descendants.includes(:trackers)
+                                             else
+                                               project.trackers.load
+                                               [project]
+                                             end
+                                  projects.any? do |proj|
+                                    next false unless proj.module_enabled?(:itil_priority)
+                                    proj.trackers.any? { |t| settings_for(proj, t) }
+                                  end
+                                else
+                                  return true unless defined?(Project)
+                                  Project.active.has_module(:itil_priority).includes(:trackers).any? do |proj|
+                                    proj.trackers.any? { |t| settings_for(proj, t) }
+                                  end
+                                end
   end
 
   def options_for(type, project = nil, tracker = nil)

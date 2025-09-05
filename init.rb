@@ -17,7 +17,7 @@ Redmine::Plugin.register :redmine_itil_priority do
   author      'Jan Catrysse'
   url         'https://github.com/jcatrysse/redmine_itil_priority'
   requires_redmine version_or_higher: '5.0.0'
-  version '0.0.1'
+  version '0.0.2'
 
   project_module :itil_priority do
     permission :manage_itil_priority_settings,

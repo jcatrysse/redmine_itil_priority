@@ -34,5 +34,22 @@ RSpec.describe 'RedmineItilPriority caching' do
     record.save
     expect(RedmineItilPriority.settings_for(project, tracker)['foo']).to eq('new')
   end
+
+  it 'caches enabled_for_project? until cache is cleared' do
+    tracker_list = [tracker]
+    descendants = double('descendants')
+    allow(descendants).to receive(:includes).with(:trackers).and_return([project])
+    allow(project).to receive(:self_and_descendants).and_return(descendants)
+    allow(project).to receive(:trackers).and_return(tracker_list)
+
+    allow(RedmineItilPriority).to receive(:settings_for).and_return({})
+
+    2.times { expect(RedmineItilPriority.enabled_for_project?(project)).to be(true) }
+    expect(RedmineItilPriority).to have_received(:settings_for).once
+
+    RedmineItilPriority.clear_cache
+    expect(RedmineItilPriority.enabled_for_project?(project)).to be(true)
+    expect(RedmineItilPriority).to have_received(:settings_for).twice
+  end
 end
 
