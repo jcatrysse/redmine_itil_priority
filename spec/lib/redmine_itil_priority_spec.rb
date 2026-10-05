@@ -3,7 +3,37 @@
 require_relative '../spec_helper'
 
 RSpec.describe RedmineItilPriority do
+  # ActiveRecord::Associations::Preloader as Rails 6.1 (Redmine 5.1) has it...
+  Rails61Preloader = Class.new do
+    def self.calls
+      @calls ||= []
+    end
+
+    def initialize(associate_by_default: true); end
+
+    def preload(records, associations)
+      self.class.calls << [records, associations]
+    end
+  end
+
+  # ...and as Rails 7.2 and 8.1 (Redmine 6.0 and later) have it.
+  Rails7Preloader = Class.new do
+    def self.calls
+      @calls ||= []
+    end
+
+    def initialize(records:, associations:, scope: nil, available_records: [], associate_by_default: true)
+      @args = [records, associations]
+    end
+
+    def call
+      self.class.calls << @args
+    end
+  end
+
   before do
+    Rails61Preloader.calls.clear
+    Rails7Preloader.calls.clear
     Setting.values = {
       'plugin_redmine_itil_priority' => {
         'label_urgency_1' => 'Not urgent',
@@ -130,6 +160,18 @@ RSpec.describe RedmineItilPriority do
           }
         }
       }
+    end
+
+    # The context menu passes the projects of the selected issues as an array.
+    # Rails 7 made the Preloader take keywords, which crashed the menu on
+    # Redmine 6.
+    { 'Rails 6.1' => Rails61Preloader, 'Rails 7 and later' => Rails7Preloader }.each do |rails, preloader|
+      it "preloads the trackers of the projects with the Preloader of #{rails}" do
+        stub_const('ActiveRecord::Associations::Preloader', preloader)
+
+        expect(described_class.urgency_options([project1, project2])).to eq([['P1-Urg1', '1'], ['P2-Urg2', '2'], ['U3', '3']])
+        expect(preloader.calls).to eq([[[project1, project2], :trackers]])
+      end
     end
 
     it 'merges labels across given projects for impact and urgency' do

@@ -124,6 +124,17 @@ module RedmineItilPriority
                                 end
   end
 
+  # Rails 7 (Redmine 6.0 and later) replaced Preloader.new.preload(records,
+  # associations) with Preloader.new(records:, associations:).call.
+  def preload_trackers(projects)
+    preloader = ActiveRecord::Associations::Preloader
+    if preloader.method_defined?(:call)
+      preloader.new(records: projects, associations: :trackers).call
+    else
+      preloader.new.preload(projects, :trackers)
+    end
+  end
+
   def options_for(type, project = nil, tracker = nil)
     global = global_settings
     labels = Hash.new { |h, k| h[k] = Set.new }
@@ -140,7 +151,7 @@ module RedmineItilPriority
           project.self_and_descendants.includes(:trackers)
         elsif project.respond_to?(:each)
           arr = project.to_a
-          ActiveRecord::Associations::Preloader.new.preload(arr, :trackers)
+          preload_trackers(arr)
           arr
         else
           project.trackers.load
