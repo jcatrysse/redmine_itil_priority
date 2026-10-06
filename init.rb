@@ -7,6 +7,7 @@ require_relative 'lib/redmine_itil_priority/patches/issue_query_patch'
 require_relative 'lib/redmine_itil_priority/patches/projects_helper_patch'
 require_relative 'lib/redmine_itil_priority/patches/setting_patch'
 require_relative 'lib/redmine_itil_priority/patches/mail_handler_patch'
+require_relative 'lib/redmine_itil_priority/patches/workflow_patch'
 
 # Toggle to enable verbose plugin logging.
 RedmineItilPriority.logging_enabled = false
@@ -43,3 +44,5 @@ IssueQuery.include RedmineItilPriority::Patches::IssueQueryPatch
 ProjectsHelper.include RedmineItilPriority::Patches::ProjectsHelperPatch
 Setting.include RedmineItilPriority::Patches::SettingPatch
 MailHandler.include RedmineItilPriority::Patches::MailHandlerPatch
+WorkflowPermission.prepend RedmineItilPriority::Patches::WorkflowPatch::WorkflowPermissionPatch
+WorkflowsController.prepend RedmineItilPriority::Patches::WorkflowPatch::WorkflowsControllerPatch

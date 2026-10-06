@@ -86,6 +86,37 @@ class ItilOverridePriorityTest < ActiveSupport::TestCase
     assert_equal [8, false], [issue.priority_id, issue.itil_priority_linked]
   end
 
+  # Core's Issue#priority_id= shadows the plugin's, so a priority set directly
+  # was written while the issue stayed linked, and the next edit undid it.
+  def test_operator_setting_the_priority_directly_unlinks
+    issue = Issue.find(1)
+    issue.send(:safe_attributes=, { 'impact_id' => '2', 'urgency_id' => '2' }, @operator)
+    issue.save!
+    issue = Issue.find(1)
+    issue.send(:safe_attributes=, { 'priority_id' => '8' }, @operator)
+    issue.save!
+    issue.reload
+    assert_equal [8, false, 2, 2], [issue.priority_id, issue.itil_priority_linked, issue.impact_id, issue.urgency_id]
+
+    issue.send(:safe_attributes=, { 'urgency_id' => '3' }, @helpdesk)
+    issue.save!
+    assert_equal 8, issue.reload.priority_id
+  end
+
+  def test_setting_the_matrix_priority_keeps_the_link
+    issue = Issue.find(1)
+    issue.send(:safe_attributes=, { 'impact_id' => '2', 'urgency_id' => '2' }, @operator)
+    issue.send(:safe_attributes=, { 'priority_id' => '5' }, @operator)
+    assert_equal [5, true], [issue.priority_id, issue.itil_priority_linked]
+  end
+
+  def test_explicit_link_wins_over_a_submitted_priority
+    issue = Issue.find(1)
+    issue.send(:safe_attributes=, { 'impact_id' => '2', 'urgency_id' => '3', 'itil_priority_linked' => '1',
+                                    'priority_id' => '8' }, @operator)
+    assert_equal [6, true], [issue.priority_id, issue.itil_priority_linked]
+  end
+
   def test_priority_stays_a_core_field_where_itil_is_inactive
     Setting.plugin_redmine_itil_priority = Setting.plugin_redmine_itil_priority.merge('default_tracker_mode' => 'inactive')
     RedmineItilPriority.clear_cache

@@ -109,6 +109,16 @@ module RedmineItilPriority
                       merge(attrs.slice('priority_id'))
           end
           super
+          itil_priority_after_assignment(attrs, user)
+        end
+
+        # Impact and urgency required by the workflow only where they are shown.
+        def required_attribute_names(user = nil)
+          names = super
+          return names if (names & %w[impact_id urgency_id]).empty?
+          return names if RedmineItilPriority.settings_for(project, tracker)
+
+          names - %w[impact_id urgency_id]
         end
 
         # Core copies the attributes in column order, so impact and urgency,
@@ -126,6 +136,26 @@ module RedmineItilPriority
       end
 
       private
+
+      # Core's own Issue#priority_id= shadows the setter above, so a priority
+      # set directly (context menu, bulk edit, REST API) is written as is. On
+      # a linked issue that differs from the matrix: an explicit link wins and
+      # gets the matrix priority; otherwise the priority was set by hand and
+      # the issue is unlinked, so the next edit does not undo it.
+      def itil_priority_after_assignment(attrs, user)
+        return unless attrs.is_a?(Hash) && attrs.key?('priority_id') && safe_attribute?('priority_id', user)
+        return unless itil_priority_active? && impact_id && urgency_id
+
+        settings = settings_for_mapping
+        computed = settings && settings["priority_i#{impact_id}_u#{urgency_id}"]
+        return if computed.blank? || computed.to_s == priority_id.to_s
+
+        if attrs.key?('itil_priority_linked')
+          self.priority_id = computed
+        else
+          write_attribute(:itil_priority_linked, false)
+        end
+      end
 
       def settings_for_mapping
         project = respond_to?(:project) ? self.project : nil
