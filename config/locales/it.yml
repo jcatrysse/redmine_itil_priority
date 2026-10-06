@@ -16,3 +16,8 @@ it:
   field_itil_priority_linked: "Priorità collegata a impatto e urgenza"
   label_itil_priority_linked: "Priorità calcolata da impatto e urgenza"
   label_itil_priority_unlinked: "Priorità impostata a mano, non collegata a impatto e urgenza"
+  field_itil_help_urgency: "Spiegazione dei livelli di urgenza"
+  field_itil_help_impact: "Spiegazione dei livelli di impatto"
+  label_itil_help: "Spiegazione dei livelli"
+  text_itil_help: "Mostrata dietro un'icona informativa accanto al campo nel modulo della segnalazione. Lasciare vuoto per nessuna icona."
+  text_itil_help_project: "Vuoto: il testo delle impostazioni generiche."

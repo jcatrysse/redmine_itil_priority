@@ -16,3 +16,8 @@ de:
   field_itil_priority_linked: "Priorität an Auswirkung und Dringlichkeit gebunden"
   label_itil_priority_linked: "Priorität aus Auswirkung und Dringlichkeit berechnet"
   label_itil_priority_unlinked: "Priorität von Hand gesetzt, nicht an Auswirkung und Dringlichkeit gebunden"
+  field_itil_help_urgency: "Erläuterung der Dringlichkeitsstufen"
+  field_itil_help_impact: "Erläuterung der Auswirkungsstufen"
+  label_itil_help: "Erläuterung der Stufen"
+  text_itil_help: "Wird hinter einem Info-Symbol neben dem Feld im Ticketformular angezeigt. Leer lassen für kein Symbol."
+  text_itil_help_project: "Leer: der Text der generischen Einstellungen."

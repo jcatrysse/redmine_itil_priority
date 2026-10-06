@@ -4,7 +4,7 @@
   .itil-priority-mapping th, .itil-priority-mapping td { padding:10px 20px; border:1px solid #bbb; }
   .itil-priority-mapping th.no-border { border:0; }
   .itil-priority-mapping.itil-disabled { opacity:0.5; }
-  .itil-priority-mapping.itil-hidden { display:none; }
+  .itil-priority-mapping.itil-hidden, .itil-help-settings.itil-hidden { display:none; }
 </style>
 <% key = "plugin_redmine_itil_priority_project_#{@project.id}" %>
 <% Setting.available_settings[key] ||= { 'serialized' => true, 'default' => {} } %>
@@ -49,6 +49,17 @@
           <th><%= select_tag "tracker_settings[#{tracker.id}][priority_i3_u3]", options_from_collection_for_select(IssuePriority.active, :id, :name, t_settings["priority_i3_u3"]), disabled: disabled, data: { default_value: default_settings["priority_i3_u3"] } %></th>
         </tr>
       </table>
+      <div class="itil-help-settings <%= 'itil-hidden' if mode == 'inactive' %>">
+      <% %w[urgency impact].each do |field| %>
+        <p>
+          <label for="tracker_settings_<%= tracker.id %>_help_<%= field %>"><%= l(:"field_itil_help_#{field}") %></label>
+          <%= text_area_tag "tracker_settings[#{tracker.id}][help_#{field}]", t_settings["help_#{field}"],
+                            id: "tracker_settings_#{tracker.id}_help_#{field}", rows: 3, cols: 60, disabled: disabled,
+                            data: { default_value: default_settings["help_#{field}"].to_s } %>
+        </p>
+      <% end %>
+      <em class="info"><%= l(:text_itil_help_project) %></em>
+      </div>
     </fieldset>
   <% end %>
   <%= submit_tag l(:button_save) %>
@@ -59,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function toggle() {
       var fieldset = select.closest('fieldset');
       var disabled = select.value !== 'custom';
-      fieldset.querySelectorAll('input, select').forEach(function(input) {
+      fieldset.querySelectorAll('input, select, textarea').forEach(function(input) {
         if (input === select) { return; }
         input.disabled = disabled;
         if (select.value === 'default' && input.dataset.defaultValue !== undefined) {
@@ -71,6 +82,8 @@ document.addEventListener('DOMContentLoaded', function() {
         table.classList.toggle('itil-disabled', select.value === 'default');
         table.classList.toggle('itil-hidden', select.value === 'inactive');
       }
+      var help = fieldset.querySelector('.itil-help-settings');
+      if (help) { help.classList.toggle('itil-hidden', select.value === 'inactive'); }
     }
     select.addEventListener('change', toggle);
     toggle();

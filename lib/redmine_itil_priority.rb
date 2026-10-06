@@ -5,7 +5,7 @@ require 'set'
 # Module containing helpers for ITIL priorities.
 module RedmineItilPriority
   CACHE_PREFIX = 'itil_priority'
-  ALLOWED_SETTING_KEY_PATTERN = /\A(?:label_(?:impact|urgency)_\d|priority_i\d_u\d|default_tracker_mode)\z/.freeze
+  ALLOWED_SETTING_KEY_PATTERN = /\A(?:label_(?:impact|urgency)_\d|help_(?:impact|urgency)|priority_i\d_u\d|default_tracker_mode)\z/.freeze
 
   class << self
     attr_accessor :logging_enabled

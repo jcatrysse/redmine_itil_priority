@@ -16,3 +16,8 @@ en:
   field_itil_priority_linked: "Priority linked to impact and urgency"
   label_itil_priority_linked: "Priority calculated from impact and urgency"
   label_itil_priority_unlinked: "Priority set by hand, not linked to impact and urgency"
+  field_itil_help_urgency: "Explanation of the urgency levels"
+  field_itil_help_impact: "Explanation of the impact levels"
+  label_itil_help: "Explanation of the levels"
+  text_itil_help: "Shown behind an info icon next to the field on the issue form. Leave empty for no icon."
+  text_itil_help_project: "Empty: the text of the generic settings."

@@ -16,3 +16,8 @@ pt:
   field_itil_priority_linked: "Prioridade ligada ao impacto e à urgência"
   label_itil_priority_linked: "Prioridade calculada a partir do impacto e da urgência"
   label_itil_priority_unlinked: "Prioridade definida manualmente, não ligada ao impacto e à urgência"
+  field_itil_help_urgency: "Explicação dos níveis de urgência"
+  field_itil_help_impact: "Explicação dos níveis de impacto"
+  label_itil_help: "Explicação dos níveis"
+  text_itil_help: "Mostrada atrás de um ícone de informação junto ao campo no formulário da tarefa. Deixar vazio para nenhum ícone."
+  text_itil_help_project: "Vazio: o texto das configurações genéricas."

@@ -14,6 +14,8 @@
   #itil_priority_link .itil-unlinked, #itil_priority_link.unlink .itil-linked { display:none; }
   #itil_priority_link.unlink .itil-unlinked { display:inline; }
   #itil_priority_link.readonly { cursor:default; }
+  .itil-priority .itil-help-toggle { margin-left:2px; }
+  .itil-help { margin:0 0 6px 180px; padding:4px 8px; max-width:600px; background-color:#fffff3; border:1px solid #eee; }
 </style>
 <% (1..3).each do |i| %>
   <% (1..3).each do |u| %>
@@ -29,7 +31,9 @@
   <% [['urgency', RedmineItilPriority.urgency_options(@project, @issue.tracker)],
       ['impact', RedmineItilPriority.impact_options(@project, @issue.tracker)]].each_with_index do |(field, options), index| %>
     <%= tag.br if index > 0 %>
-    <label class=inline><%= l(:"field_#{field}") %><%= content_tag(:span, ' *', class: 'required') if @issue.required_attribute?("#{field}_id") %></label>
+    <label class=inline><%= l(:"field_#{field}") %><%= content_tag(:span, ' *', class: 'required') if @issue.required_attribute?("#{field}_id") %><% if settings["help_#{field}"].present? %>
+      <%= link_to (respond_to?(:sprite_icon) ? sprite_icon('help') : '(?)'), '#', class: 'itil-help-toggle icon-only', title: l(:label_itil_help),
+                  data: { target: "itil_help_#{field}" } %><% end %></label>
     <% value = @issue.send("#{field}_id") %>
     <% if @issue.safe_attribute?("#{field}_id") %>
       <%= select_tag "issue[#{field}_id]", options_for_select([["", ""]] + options, value) %>
@@ -59,6 +63,16 @@
   </span>
   </span>
 </p>
+<div id="itil_priority_help">
+<% %w[urgency impact].each do |field| %>
+  <% if settings["help_#{field}"].present? %>
+  <div id="itil_help_<%= field %>" class="itil-help wiki" style="display:none;">
+    <strong><%= l(:"field_#{field}") %></strong>
+    <%= textilizable settings["help_#{field}"], project: @project %>
+  </div>
+  <% end %>
+<% end %>
+</div>
 <script>
 $(function() {
   var $field = $("#itil_priority_field")
@@ -70,6 +84,11 @@ $(function() {
     // without the permission core shows no priority field: take its place after the status
     $("#issue_status_id").closest('p').after($field)
   }
+  $field.after($("#itil_priority_help"))
+  $field.find('.itil-help-toggle').on('click', function(e) {
+    e.preventDefault()
+    $('#' + $(this).data('target')).toggle()
+  })
   var $select = $("#itil_issue_priority_id")
   var $link = $("#itil_priority_link")
   var linked = canOverride ? $('#itil_priority_linked').val() !== '0' : $field.data('linked') === true

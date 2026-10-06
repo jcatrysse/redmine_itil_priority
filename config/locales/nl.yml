@@ -16,3 +16,8 @@ nl:
   field_itil_priority_linked: "Prioriteit gekoppeld aan impact en urgentie"
   label_itil_priority_linked: "Prioriteit berekend uit impact en urgentie"
   label_itil_priority_unlinked: "Prioriteit met de hand ingesteld, niet gekoppeld aan impact en urgentie"
+  field_itil_help_urgency: "Uitleg bij de urgentieniveaus"
+  field_itil_help_impact: "Uitleg bij de impactniveaus"
+  label_itil_help: "Uitleg bij de niveaus"
+  text_itil_help: "Getoond achter een info-icoon naast het veld op het issueformulier. Leeg laten voor geen icoon."
+  text_itil_help_project: "Leeg: de tekst van de generieke instellingen."

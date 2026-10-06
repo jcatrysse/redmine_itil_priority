@@ -35,4 +35,11 @@
       <th><%= select_tag "settings[priority_i3_u3]", options_from_collection_for_select(IssuePriority.active, :id, :name, settings["priority_i3_u3"]) %></th>
     </tr>
   </table>
+  <% %w[urgency impact].each do |field| %>
+  <p>
+    <label for="settings_help_<%= field %>"><%= l(:"field_itil_help_#{field}") %></label>
+    <%= text_area_tag "settings[help_#{field}]", settings["help_#{field}"], rows: 4, cols: 60, class: 'wiki-edit' %>
+    <em class="info"><%= l(:text_itil_help) %></em>
+  </p>
+  <% end %>
 </fieldset>

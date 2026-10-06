@@ -16,3 +16,8 @@ es:
   field_itil_priority_linked: "Prioridad vinculada al impacto y la urgencia"
   label_itil_priority_linked: "Prioridad calculada a partir del impacto y la urgencia"
   label_itil_priority_unlinked: "Prioridad fijada a mano, no vinculada al impacto y la urgencia"
+  field_itil_help_urgency: "Explicación de los niveles de urgencia"
+  field_itil_help_impact: "Explicación de los niveles de impacto"
+  label_itil_help: "Explicación de los niveles"
+  text_itil_help: "Se muestra tras un icono de información junto al campo en el formulario de la petición. Dejar vacío para no mostrar icono."
+  text_itil_help_project: "Vacío: el texto de la configuración genérica."

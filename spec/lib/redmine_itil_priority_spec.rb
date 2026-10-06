@@ -237,4 +237,9 @@ RSpec.describe RedmineItilPriority do
     end
   end
 
+
+  it 'keeps the help texts in the filtered settings and drops unknown keys' do
+    filtered = described_class.filter_settings('help_impact' => 'x', 'help_urgency' => 'y', 'help_other' => 'z')
+    expect(filtered).to eq('help_impact' => 'x', 'help_urgency' => 'y')
+  end
 end

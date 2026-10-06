@@ -16,3 +16,8 @@ ja:
   field_itil_priority_linked: "影響と緊急度に連動する優先度"
   label_itil_priority_linked: "影響と緊急度から計算された優先度"
   label_itil_priority_unlinked: "手動で設定された優先度（影響と緊急度に連動しない）"
+  field_itil_help_urgency: "緊急度レベルの説明"
+  field_itil_help_impact: "影響レベルの説明"
+  label_itil_help: "レベルの説明"
+  text_itil_help: "チケットフォームの項目の横にある情報アイコンの後ろに表示されます。空にするとアイコンは表示されません。"
+  text_itil_help_project: "空の場合: 一般設定のテキスト。"
