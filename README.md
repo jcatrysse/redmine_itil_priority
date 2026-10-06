@@ -4,9 +4,10 @@
 
 This Redmine plugin replaces the single priority field with an ITIL style
 **Impact × Urgency** matrix. The resulting priority is calculated from the
-selected impact and urgency. Users may temporarily unlink the automatic
-calculation by clicking the link icon next to the priority field and choose a
-priority manually.
+selected impact and urgency. Users with the permission "Override ITIL
+priority" may unlink the automatic calculation by clicking the link icon next
+to the priority field and choose a priority manually; the issue stays unlinked
+until someone with that permission links it again.
 
 ## Features
 
@@ -23,6 +24,18 @@ priority manually.
 - Priority selection is available in the context menu and bulk edit screens.
 - Translations for English, French, German, Spanish, Dutch, Japanese, Italian and Portuguese.
 - Priority can be set via incoming emails when allowed by configuration.
+- Permission **Override ITIL priority** (project module ITIL priority): without
+  it a user sets impact and urgency only and the priority follows the matrix.
+  This holds for the issue form, bulk edit, context menu, REST API and incoming
+  mail. A priority made read-only by the workflow cannot be unlinked either.
+- Impact and Urgency in Administration > Workflow > Fields permissions:
+  read-only or required per role, tracker and status, like core fields.
+- Optional explanation of the impact and urgency levels, shown behind an info
+  icon on the issue form: one text per instance (plugin settings), overridable
+  per project and tracker in the tracker's Custom mode.
+- Issue history and notification mails show the impact and urgency labels.
+- Redmine 7 webhooks: the issue payload carries `impact_id`, `urgency_id` and
+  `itil_priority_linked`.
 
 ## Supported languages
 
@@ -54,11 +67,16 @@ in `init.rb`. Logging is disabled by default.
 
 ## Testing
 
-Run the test suite with RSpec:
+Run the test suite with RSpec (stand-alone specs) and minitest (against a
+real Redmine with its fixtures):
 
 ```bash
 RAILS_ENV=test bundle exec rspec plugins/redmine_itil_priority/spec
+RAILS_ENV=test bundle exec ruby -Itest -e 'Dir["plugins/redmine_itil_priority/test/**/*_test.rb"].each { |f| require File.expand_path(f) }'
 ```
+
+`./.codex/test_plugin.sh` runs both; `./.codex/e2e.sh` the browser scenarios
+in `test/e2e/` (see CLAUDE.md).
 
 ## Screenshots
 
@@ -118,9 +136,12 @@ curl -H "X-Redmine-API-Key: YOUR_KEY" \
 
 ### Issue API
 
-`impact_id` and `urgency_id` are available in the standard Redmine issue REST
-API. They can be supplied when creating or updating an issue and are returned
-when fetching issues.
+`impact_id`, `urgency_id` and `itil_priority_linked` are available in the
+standard Redmine issue REST API. They can be supplied when creating or updating
+an issue and are returned when fetching issues. `priority_id` and
+`itil_priority_linked` are only accepted from users with the permission
+"Override ITIL priority"; a `priority_id` that differs from the matrix unlinks
+the issue, unless `itil_priority_linked: true` is sent with it.
 
 ## Setting Itil Priority Imapct × Urgency by email
 
@@ -135,7 +156,17 @@ Itil priority linked: 0
 ```
 
 The labels must match those configured for the project/tracker. This applies
-only to issues where ITIL priority is enabled.
+only to issues where ITIL priority is enabled. `Priority` and
+`Itil priority linked` are only applied when the sender has the permission
+"Override ITIL priority".
+
+## Upgrading from 0.0.2
+
+Run the plugin migrations. Migration 003 adds `issues.itil_priority_linked`
+(existing issues stay linked). Migration 004 grants "Override ITIL priority" to
+every role that can add or edit issues, so nothing changes for users; then
+remove it from the roles that must not set the priority (helpdesk, anonymous,
+non member).
 
 ## Thank you
 

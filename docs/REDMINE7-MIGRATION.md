@@ -18,16 +18,31 @@ what is left. Written 2026-10-06 from a measured analysis (report at the bottom)
 | Plugin id | `redmine_itil_priority` |
 | GEOxyz runs today | `master` |
 | Upstream | geen |
-| Runs on Redmine 7 as is | JA |
+| Runs on Redmine 7 as is | JA (baseline below); migration work done, see "Result" |
 | Upstream sync | GEEN UPSTREAM |
 | After sync | n.v.t. |
 | Complexity (1 trivial .. 5 rewrite) | 1 |
 | Measured on | Redmine 7.0.1 (7.0-stable-GEOxyz + latest 7.0-stable), Rails 8.1.3.1, Ruby 3.3.6, PostgreSQL 16 and MariaDB 10.11 |
 | Branch head when this file was written | `d30ddf9` |
+| Migration session | 2026-10-06, done: work list complete, tests and e2e green on PostgreSQL and MariaDB, OpenAI review no findings |
 
 ## Already on this branch
 
-- nothing: the branch equals the branch GEOxyz runs today.
+Commits of the migration session (2026-10-06), oldest first:
+
+| commit | what |
+|---|---|
+| 840377d | Impact and urgency only editable by who may edit the issue (security: notes-only users could change them, and so the priority) |
+| 33ea77e | Store whether the priority is linked (migration 003, `issues.itil_priority_linked`); unlinked priority survives later edits; order-independent assignment; copy keeps it; REST API field |
+| 03688e5 | Permission "override ITIL priority" (change request, migration 004 grants it to issue-editing roles) |
+| 211335d | Impact and Urgency in the workflow's fields permissions; a priority set directly unlinks |
+| 337bdc6 | History shows impact/urgency labels and the link as Yes/No |
+| df287de | Webhook payloads carry impact, urgency and the link (Redmine 7) |
+| 0a2d287 | SVG icons on Redmine 6+: link toggle, context menu arrows |
+| 027b909 | Info icons that explain the impact and urgency levels (item 2) |
+| 60f90c2 | Settings and module changes reach every server process |
+| 7c98816, ae006a8, 8178233 | E2E scenarios; list columns show labels instead of 1..3 (found by the e2e run) |
+| 36ec46e, 064b479, b944f8d | Redmine 5.1 run (test helper, info icon), before pictures, run together with the other GEOxyz plugins |
 
 ## Work list for the migration session
 
@@ -36,18 +51,44 @@ In this order: things that break, security, the GEOxyz changes, the open items, 
 **Priority items**
 
 1. Change request (include in this migration): helpdesk users may set only urgency and impact, never the priority; an operator can unlink the computed priority or change it. Build it on permissions (a new permission such as "override ITIL priority") and check how it combines with workflow field permissions (read-only/required per role and tracker) on priority_id, impact_id and urgency_id, so it also holds for issues created by mail (helpdesk) and through the REST API.
+   **DONE** (03688e5, 211335d, with 33ea77e as prerequisite). Rules:
+   - permission `override_itil_priority` (module ITIL priority). Without it, where ITIL is active for the issue's project and tracker, `priority_id` and `itil_priority_linked` are not safe attributes: the user sets impact and urgency, the priority follows the matrix. Core filters every assignment through safe attributes, so it holds for form, bulk edit, context menu, REST API and mail (tests and e2e for each).
+   - workflow: `priority_id` read-only wins over the permission (no unlinking either). Impact and Urgency are now workflow fields of their own (read-only / required per role, tracker, status); "required" is dropped where ITIL is inactive for the issue.
+   - the link is stored (`issues.itil_priority_linked`), so an operator's priority survives later edits by helpdesk users; only someone with the permission links it again (recalculates).
+   - a priority set directly (context menu, bulk edit, API) that differs from the matrix unlinks the issue; with `itil_priority_linked=1` sent along, the matrix wins.
 2. Nice to have: info icons next to impact and urgency that explain the levels, with the text manageable per instance, project and tracker (decide the storage: plugin settings for the instance, project settings tab, tracker-level override).
+   **DONE** (027b909, 7c98816, 064b479). Storage: the settings the plugin already has, no new table: `help_impact` / `help_urgency` in the plugin settings (instance) and in the tracker's Custom mode on the project's ITIL priority tab (project + tracker; empty = generic text). Wiki-formatted, sanitized by Redmine. No text, no icon.
 3. Webhooks: add impact_id/urgency_id to the webhook payload (core renders its own issues/show.api.rsb, not the plugin override).
+   **DONE** (df287de): `Issue#webhook_payload_api_template` points at the plugin's show.api.rsb; payload has impact_id, urgency_id, itil_priority_linked. Proven by a unit test and by `test/e2e/webhook.mjs` (real delivery to a listener). Combines with redmine_view_issue_description's webhook patch (that one filters recipients).
 
 **Open items from the analysis** (Dutch; where they conflict with a decision or a priority item above, those win)
 
 4. issues/index.api.rsb en show.api.rsb overriden core; bij elke 7.0.x-update tegen core diffen (nu identiek op impact/urgency na)
+   **DONE / blijvend**: `spec/views/issue_api_views_spec.rb` vergelijkt beide templates regel per regel met core van de Redmine waarin de tests lopen; enige toegestane extra regels: impact_id, urgency_id, itil_priority_linked en de 6.0-journalvelden. Groen op 7.0-stable-GEOxyz en 5.1-stable.
 5. Webhooks (7.0) gebruiken core show.api.rsb: impact_id/urgency_id ontbreken in webhook-payload
+   **DONE**: zie 3.
 
 **Checks**
 
 6. Run the plugin's whole test suite on Redmine 7.0-stable-GEOxyz with PostgreSQL AND MariaDB, and once on 5.1-stable if the branch is meant to stay 5.1-compatible.
+   **DONE**, see "Result".
 7. Verify every feature of the plugin by hand on a running Redmine 7 (screenshots).
+   **DONE**, see "Inventory of functions" and "Result".
+
+**Found and fixed during the session** (each with a test that fails without it)
+
+8. Security: impact/urgency (and so the priority) were editable by users who may only add notes (840377d).
+9. The unlinked state was not stored: the next edit relinked and recalculated the operator's priority (33ea77e; before picture `docs/e2e/before/issue_form-unlinked-reopened.png`).
+10. Core's `Issue#priority_id=` shadows the plugin's (module included, not prepended): mapping a priority back to impact/urgency never ran in Redmine, only in the spec's fake class. Left as is (dead in Redmine, the spec keeps it); a directly set priority now unlinks instead (211335d). See open question 3.
+11. Issue list columns, CSV and PDF showed 1..3 instead of labels: core's QueryColumn ignores a block (ae006a8).
+12. Settings memo per process forever: other Puma/Passenger processes kept the old matrix; a project that got the module later had no filters until a restart (60f90c2).
+13. Info icon unclickable behind the priority block (found by the e2e run, 7c98816); invisible on Redmine 5.1 (064b479).
+
+**Left (not done, with reason)**
+
+14. The issue page (show) does not display impact and urgency, only the form does. Not asked; would be a small `view_issues_show_details_bottom` hook. Recommendation: add it in a follow-up if helpdesk users need to see them without opening the form.
+15. Different labels per tracker are merged in filters across trackers (existing behaviour of `options_for`), unchanged.
+16. `.codex/test_setup.sh` fails when run as root with `RMP_PROVISION_DB=1` (`$SUDO -u postgres` with an empty `$SUDO`). Worked around by creating the role by hand and `RMP_PROVISION_DB=0`; the script belongs to the migration kit, fix it there.
 
 ## GEOxyz changes to review or re-apply
 
@@ -57,7 +98,69 @@ Own plugin: all of it is GEOxyz code, so there is nothing to re-apply. While mig
 
 Actions the person doing the upgrade must take, or know about, for this plugin:
 
-- None known. Add here what the session finds.
+- Run the plugin migrations (`rake redmine:plugins:migrate`): 003 adds `issues.itil_priority_linked` (boolean, default true, not null; existing issues stay linked, so they behave as before), 004 grants "Override ITIL priority" to every role with add_issues, edit_issues or edit_own_issues (builtin Non member and Anonymous included when they have those). Both are reversible (tested down to 0 and up on PostgreSQL and MariaDB).
+- **Then remove "Override ITIL priority"** (Administration > Roles and permissions, module ITIL priority) from the roles that must not set the priority: the helpdesk role(s), and Anonymous / Non member if mail from unknown senders or non-members may create issues. Until then everyone keeps setting the priority as today.
+- Optional: in Administration > Workflow > Fields permissions, make Impact and/or Urgency required or read-only where wanted.
+- Optional: fill in the explanation texts (Administration > Plugins > ITIL priority, or per project and tracker in Custom mode).
+- Webhooks: nothing to do; issue payloads now include impact_id, urgency_id and itil_priority_linked.
+- Issues whose priority was set by hand before the upgrade are stored as linked (the flag did not exist); the next edit through the form recalculates them, as it did before. Re-unlink them if needed.
+
+## Inventory of functions
+
+Screenshots in `docs/e2e/` (PostgreSQL run, Redmine 7.0-stable-GEOxyz, production mode); each `<scenario>.md` there lists them with user, URL and caption. "Before" pictures (master on Redmine 5.1) in `docs/e2e/before/`.
+
+| function | how a user reaches it | scenario | screenshots |
+|---|---|---|---|
+| Global settings: default tracker mode, labels, matrix, help texts | Administration > Plugins > ITIL priority (admin) | settings.mjs, smoke | settings-global, settings-global-saved, smoke-11 |
+| Project settings per tracker (inactive / generic / custom, own matrix, labels, help texts) | Project > Settings > ITIL priority (permission "Manage ITIL priority settings"); refused without | settings.mjs | settings-project-tab, settings-project-saved, settings-form-inactive, settings-form-custom, settings-reporter-refused |
+| Issue form: impact x urgency gives the priority, live | new/edit issue | issue_form.mjs, core | issue_form-new-linked, -created, core-new-issue-form |
+| Unlink / set priority by hand / link again (operator) | link icon on the form (permission "Override ITIL priority") | issue_form.mjs | issue_form-unlinked-edit, -unlinked-history, -unlinked-reopened, -relinked |
+| Helpdesk user: impact and urgency only | form without the permission | issue_form.mjs | issue_form-helpdesk-edit, -helpdesk-saved, -helpdesk-new, -helpdesk-created |
+| Info icons with level explanations | icon next to Impact/Urgency on the form | issue_form.mjs, settings.mjs | issue_form-help-impact, settings-form-custom |
+| History labels and link Yes/No | issue page, history | issue_form.mjs, issue_list.mjs | issue_form-unlinked-history, -relinked, issue_list-context-menu-applied |
+| Columns and filters Impact / Urgency | issue list, options and filters | issue_list.mjs | issue_list-columns-filter, -bulk-edit-result |
+| Context menu Urgency / Impact | right click in the issue list; no Priority without the permission | issue_list.mjs, core | issue_list-context-menu-operator, -context-menu-helpdesk, -context-menu-applied, core-context-menu |
+| Bulk edit Urgency / Impact | context menu > Bulk edit | issue_list.mjs | issue_list-bulk-edit-helpdesk, -bulk-edit-result |
+| REST API: impact_id, urgency_id, itil_priority_linked on issues, with and without the permission | `/issues.json`, `/issues/:id.json` | rest_api.mjs | rest_api-calls, rest_api-issue |
+| Settings API global (admin) and project (permission); 401/403 refusals | `/itil_priority/api/settings.json`, `/projects/:id/itil_priority/api/settings.json` | rest_api.mjs, smoke | rest_api-calls, smoke-13, smoke-14 |
+| Incoming mail keywords Impact / Urgency / Priority / Itil priority linked | `POST /mail_handler` (rdm-mailhandler) | mail.mjs | mail-posted, mail-helpdesk, mail-operator, mail-unknown-label |
+| Workflow field permissions Impact / Urgency (read-only, required) | Administration > Workflow > Fields permissions | workflow.mjs, smoke | workflow-permissions, -form, -required-error, -other-role, smoke-12 |
+| Webhook payload (Redmine 7) | My account > Webhooks; issue created/updated | webhook.mjs | webhook-new-webhook, -webhook-list, -payloads |
+| Outsider: private project invisible | non-member | issue_form.mjs, core | issue_form-outsider-refused, core-private-refused |
+| Upgrade path: migrations 003/004 on an existing database | `rake redmine:plugins:migrate` | start_server on the baseline database, rollback test | (log, see Result) |
+
+No rake tasks, cron jobs or macros in this plugin.
+
+## Result (2026-10-06)
+
+Baseline before any change (7.0-stable-GEOxyz 8067e23, PostgreSQL 16): rspec 54 examples, 0 failures; e2e smoke 13 + core 6 screenshots, 0 problems.
+
+| | Redmine 7.0-stable-GEOxyz, PostgreSQL 16.15 | Redmine 7.0-stable-GEOxyz, MariaDB 10.11.14 | Redmine 5.1-stable, PostgreSQL, Ruby 3.2 | 7.0 with 6 other GEOxyz plugins, PostgreSQL |
+|---|---|---|---|---|
+| minitest (test/, real Redmine) | 55 runs, 248 assertions, 0 failures | 55 runs, 248 assertions, 0 failures | 55 runs, 203 assertions, 0 failures, 2 skips (webhooks, SVG sprites: not in 5.1) | 55 runs, 248 assertions, 0 failures |
+| rspec (spec/) | 59 examples, 0 failures | 59 examples, 0 failures | 59 examples, 0 failures | 59 examples, 0 failures |
+| migrations down to 0 and up | OK | OK | n/a | n/a |
+| e2e (real server, production mode) | smoke 14, core 6, 7 scenarios, 58 screenshots, 0 problems | same, 58 screenshots, 0 problems | smoke 14, core 6, 6 scenarios, 55 screenshots, 0 problems (webhook scenario n/a: no webhooks in 5.1) | 58 screenshots, 0 problems |
+
+Committed screenshots: the PostgreSQL run (`docs/e2e/`) and the before run (`docs/e2e/before/`); the MariaDB, 5.1 and combined runs were looked at and gave the same pictures, not committed.
+
+Combined run: redmine70-migration branches of redmine_issue_field_visibility, redmine_parent_child_filters, redmine_view_issue_description, redmine_issue_view_columns, redmine_depending_custom_fields, custom_field_sql. Only interaction found: with redmine_view_issue_description a role needs its "view issue description" permission to open an issue at all (fixture roles in the tests, the seeded Reporter role in e2e). That is that plugin's design, not a conflict; the test helper grants it when present.
+
+## Review
+
+- Own adversarial review of the whole diff: findings 8 to 13 above came from tests and the e2e runs and are fixed; nothing open.
+- OpenAI review (`./.codex/openai_review.sh`, gpt-5, range 51cd4c0..b944f8d, 2 requests): "No findings" in both parts. `docs/reviews/openai-2026-10-06-b944f8d.md`.
+
+## Open questions for Jan
+
+Built as recommended; change it if you decide otherwise.
+
+1. **Migration 004 grants "Override ITIL priority" to every role that can add or edit issues.** Options: (a) grant on upgrade, remove from helpdesk roles afterwards (built: nobody loses anything on upgrade); (b) grant nothing, add it to the operator roles by hand (helpdesk users lose the priority at once, operators too until someone ticks it). Recommendation: (a).
+2. **The link is stored in a new column `issues.itil_priority_linked`** (schema change not required by Redmine 7). Without it an operator's priority is undone by the next edit, so the change request cannot hold. Alternative: derive "unlinked" from "priority differs from the matrix" (no column, but every matrix change would mark old issues unlinked). Recommendation: keep the column.
+3. **A priority set directly on a linked issue (context menu, bulk edit, API) unlinks the issue.** The plugin's own code meant to map the priority back to impact and urgency instead, but that code never ran in Redmine (core's setter shadows it), and mapping back is ambiguous when several cells share a priority. Recommendation: keep unlinking.
+4. **A helpdesk user who changes urgency on an issue an operator unlinked keeps the operator's priority** (impact/urgency are stored, the priority stays). Alternative: helpdesk changes recalculate and drop the operator's priority. Recommendation: keep it as built; the operator decided.
+5. **Help texts**: one text per field (impact, urgency) explaining all three levels, not one text per level. Recommendation: keep; per level would be nine fields per tracker.
+6. Not tested, out of reach here: the RedmineUP helpdesk plugin (redmine_contacts_helpdesk), which creates issues through its own mail handler. If it assigns `priority_id` directly instead of through `safe_attributes=`, the permission does not apply to it. Check on staging with that plugin.
 
 ## How to test
 
