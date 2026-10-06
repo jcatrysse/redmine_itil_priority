@@ -3,6 +3,7 @@
 <% if @safe_attributes.include?('urgency_id') -%>
 <li class="folder">
   <a href="#" class="submenu"><%= l(:field_urgency) %></a>
+  <%= content_tag(:span, sprite_icon('angle-right'), class: 'icon-only') if respond_to?(:sprite_icon) %>
   <ul>
     <% RedmineItilPriority.urgency_options(projects).each do |i| -%>
       <li><%= context_menu_link i[0], bulk_update_issues_path(ids: @issue_ids, issue: { 'urgency_id' => i[1] }, back_url: @back), method: :post, selected: (@issue && i[1] == @issue.urgency_id), disabled: (!@can[:edit] || @issues.any?(&:priority_derived?)) %></li>
@@ -14,6 +15,7 @@
 <% if @safe_attributes.include?('impact_id') -%>
 <li class="folder">
   <a href="#" class="submenu"><%= l(:field_impact) %></a>
+  <%= content_tag(:span, sprite_icon('angle-right'), class: 'icon-only') if respond_to?(:sprite_icon) %>
   <ul>
     <% RedmineItilPriority.impact_options(projects).each do |i| -%>
       <li><%= context_menu_link i[0], bulk_update_issues_path(ids: @issue_ids, issue: { 'impact_id' => i[1] }, back_url: @back), method: :post, selected: (@issue && i[1] == @issue.impact_id), disabled: (!@can[:edit] || @issues.any?(&:priority_derived?)) %></li>

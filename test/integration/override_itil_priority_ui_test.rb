@@ -40,7 +40,19 @@ class ItilOverridePriorityUiTest < Redmine::IntegrationTest
     log_user('jsmith', 'jsmith')
     get '/issues/1/edit'
     assert_select 'input#itil_priority_linked[value=?]', '0'
-    assert_select 'img#itil_priority_link.unlink'
+    assert_select '#itil_priority_link.unlink'
+  end
+
+  def test_link_icon_and_menu_arrows_are_sprites_where_redmine_has_them
+    skip 'Redmine 5 has no SVG sprites' unless ApplicationController.helpers.respond_to?(:sprite_icon)
+    log_user('jsmith', 'jsmith')
+    get '/issues/1/edit'
+    assert_select 'span#itil_priority_link svg.itil-linked use[href*=?]', 'icon--link'
+    assert_select 'span#itil_priority_link svg.itil-unlinked use[href*=?]', 'icon--link-break'
+    get '/issues/context_menu', params: { ids: [1] }, xhr: true
+    assert_select 'li.folder', text: /Urgency/ do
+      assert_select 'span.icon-only svg use[href*=?]', 'icon--angle-right'
+    end
   end
 
   def test_update_without_the_permission_ignores_the_priority
