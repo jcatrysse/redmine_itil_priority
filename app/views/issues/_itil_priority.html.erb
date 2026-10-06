@@ -1,13 +1,17 @@
 <% settings = RedmineItilPriority.settings_for(@project, @issue.tracker) %>
 <% if settings %>
+<% can_override = @issue.safe_attribute?('priority_id') && @issue.safe_attribute?('itil_priority_linked') %>
+<% linked = @issue.itil_priority_active? %>
 <style>
   .itil-priority { position:relative; display:inline-block; min-width:440px; min-height:50px;
                    background-color:#fffff3; padding:4px 6px; border:1px solid #eee; }
   .itil-priority label.inline { font-weight:normal; display:inline-block; width:60px; text-align:left; }
   .itil-priority select { width:150px !important; }
+  .itil-priority .itil-value { display:inline-block; width:150px; }
   .real-priority { box-sizing:border-box; width:100%; position:absolute; top:0; left:230px; height:100%; padding-top:1.4em; }
   .real-priority > .priority { position:absolute; top:1.4em; left:25px; font-size:110%; }
   #itil_priority_link.unlink { opacity:0.4; }
+  #itil_priority_link.readonly { cursor:default; }
 </style>
 <% (1..3).each do |i| %>
   <% (1..3).each do |u| %>
@@ -15,20 +19,33 @@
     <%= content_tag(:span, settings[key], id: key, style: 'display:none;') %>
   <% end %>
 <% end %>
-<p id="itil_priority_field" data-new-record="<%= @issue.new_record? %>" data-default-priority="<%= IssuePriority.default.try(:id) %>" data-current-priority="<%= @issue.priority_id %>">
+<p id="itil_priority_field" data-new-record="<%= @issue.new_record? %>" data-default-priority="<%= IssuePriority.default.try(:id) %>" data-current-priority="<%= @issue.priority_id %>"
+   data-can-override="<%= can_override %>" data-linked="<%= linked %>"
+   data-title-linked="<%= l(:label_itil_priority_linked) %>" data-title-unlinked="<%= l(:label_itil_priority_unlinked) %>">
 <label><%= l(:field_priority) %></label>
 <span class=itil-priority>
-  <label class=inline><%= l(:field_urgency) %></label>
-  <%= select_tag "issue[urgency_id]", options_for_select([["", ""]] + RedmineItilPriority.urgency_options(@project, @issue.tracker), @issue.urgency_id) %>
-  <br>
-  <label class=inline><%= l(:field_impact) %></label>
-  <%= select_tag "issue[impact_id]", options_for_select([["", ""]] + RedmineItilPriority.impact_options(@project, @issue.tracker), @issue.impact_id) %>
-  <%= hidden_field_tag 'issue[itil_priority_linked]', @issue.itil_priority_active? ? '1' : '0', id: 'itil_priority_linked' %>
+  <% [['urgency', RedmineItilPriority.urgency_options(@project, @issue.tracker)],
+      ['impact', RedmineItilPriority.impact_options(@project, @issue.tracker)]].each_with_index do |(field, options), index| %>
+    <%= tag.br if index > 0 %>
+    <label class=inline><%= l(:"field_#{field}") %><%= content_tag(:span, ' *', class: 'required') if @issue.required_attribute?("#{field}_id") %></label>
+    <% value = @issue.send("#{field}_id") %>
+    <% if @issue.safe_attribute?("#{field}_id") %>
+      <%= select_tag "issue[#{field}_id]", options_for_select([["", ""]] + options, value) %>
+    <% else %>
+      <%= content_tag :span, options.detect { |o| o[1] == value.to_s }&.first, id: "issue_#{field}_id", class: 'itil-value', data: { value: value.to_s } %>
+    <% end %>
+  <% end %>
+  <%= hidden_field_tag 'issue[itil_priority_linked]', linked ? '1' : '0', id: 'itil_priority_linked' if can_override %>
   <span class=real-priority>
-    <%= image_tag("stock_link.png", plugin: "redmine_itil_priority", id: "itil_priority_link", style: 'cursor:pointer;') %>
+    <%= image_tag("stock_link.png", plugin: "redmine_itil_priority", id: "itil_priority_link",
+                  class: [('unlink' unless linked), ('readonly' unless can_override)].compact.join(' '),
+                  title: l(linked ? :label_itil_priority_linked : :label_itil_priority_unlinked),
+                  style: (can_override ? 'cursor:pointer;' : nil)) %>
     <span class=priority>
+      <% if can_override %>
       <%= select_tag "issue[priority_id]", options_for_select(@priorities.map { |p| [p.name, p.id] }, @issue.priority_id),
                      id: 'itil_issue_priority_id', disabled: !@issue.leaf?, style: 'display:none;' %>
+      <% end %>
       <%= content_tag :span, @issue.priority, id: "real-priority-display" %>
     </span>
   </span>
@@ -36,24 +53,45 @@
 </p>
 <script>
 $(function() {
+  var $field = $("#itil_priority_field")
+  var canOverride = $field.data('can-override') === true
   var $priority = $("#issue_priority_id").closest('p')
-  $priority.replaceWith($("#itil_priority_field"))
+  if ($priority.length) {
+    $priority.replaceWith($field)
+  } else if ($("#issue_status_id").closest('p').length) {
+    // without the permission core shows no priority field: take its place after the status
+    $("#issue_status_id").closest('p').after($field)
+  }
   var $select = $("#itil_issue_priority_id")
   var $link = $("#itil_priority_link")
-  var linked = $('#itil_priority_linked').val() !== '0'
-  var defaultPriority = String($("#itil_priority_field").data('default-priority'))
-  var currentPriority = String($("#itil_priority_field").data('current-priority'))
+  var linked = canOverride ? $('#itil_priority_linked').val() !== '0' : $field.data('linked') === true
+  var defaultPriority = String($field.data('default-priority'))
+  var currentPriority = String($field.data('current-priority'))
+  var priorityNames = <%= raw json_escape(IssuePriority.active.map { |p| [p.id.to_s, p.name] }.to_h.to_json) %>
+
+  function itilValue(name) {
+    var $el = $("#issue_" + name + "_id")
+    return $el.is('select') ? $el.val() : String($el.data('value') || '')
+  }
+
+  function showPriority(priority_id) {
+    if (canOverride) {
+      $select.val(priority_id)
+      $("#real-priority-display").text($select.find("option:selected").text())
+    } else {
+      $("#real-priority-display").text(priorityNames[priority_id] || '')
+    }
+  }
 
   function recalculateItilPriority(impact, urgency) {
-    var priority_id = $("#priority_i" + impact + "_u" + urgency).text()
-    $select.val(priority_id)
-    $("#real-priority-display").text($select.find("option:selected").text())
+    showPriority($("#priority_i" + impact + "_u" + urgency).text())
   }
 
   function setLinked(state) {
     linked = state
     $('#itil_priority_linked').val(linked ? '1' : '0')
     $link.toggleClass('unlink', !linked)
+    $link.attr('title', $field.data(linked ? 'title-linked' : 'title-unlinked'))
     if (linked) {
       $select.hide()
       $('#real-priority-display').show()
@@ -65,26 +103,29 @@ $(function() {
   }
 
   function syncPriority() {
-    var impact = $("#issue_impact_id").val()
-    var urgency = $("#issue_urgency_id").val()
+    var impact = itilValue('impact')
+    var urgency = itilValue('urgency')
     if (linked) {
       if (impact === '' || urgency === '') {
         // without both, a new issue gets the default priority, an existing one keeps its own
-        $select.val($("#itil_priority_field").data('new-record') ? defaultPriority : currentPriority)
-        $("#real-priority-display").text($select.find("option:selected").text())
+        showPriority($field.data('new-record') ? defaultPriority : currentPriority)
       } else {
         recalculateItilPriority(impact, urgency)
       }
     }
   }
 
-  $("#issue_urgency_id, #issue_impact_id").on("change", syncPriority)
+  $("select#issue_urgency_id, select#issue_impact_id").on("change", syncPriority)
 
-  $link.on('click', function() {
-    setLinked(!linked)
-  })
-  var isNew = $("#itil_priority_field").data('new-record')
-  if (isNew && $("#issue_impact_id").val() === '' && $("#issue_urgency_id").val() === '') {
+  if (canOverride) {
+    $link.on('click', function() {
+      setLinked(!linked)
+    })
+    if (!linked) { setLinked(false) }
+  }
+  var isNew = $field.data('new-record')
+  if (isNew && itilValue('impact') === '' && itilValue('urgency') === '' &&
+      $("select#issue_impact_id").length && $("select#issue_urgency_id").length) {
     outer:
     for (var i = 1; i <= 3; i++) {
       for (var u = 1; u <= 3; u++) {
@@ -92,7 +133,7 @@ $(function() {
         if (span.text() === defaultPriority) {
           $("#issue_impact_id").val(i)
           $("#issue_urgency_id").val(u)
-          setLinked(true)
+          if (canOverride) { setLinked(true) }
           break outer
         }
       }

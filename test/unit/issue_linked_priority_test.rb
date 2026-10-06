@@ -9,6 +9,7 @@ class ItilIssueLinkedPriorityTest < ActiveSupport::TestCase
   def setup
     User.current = User.find(2)
     itil_setup
+    role_with_override(1)
   end
 
   def unlinked_issue

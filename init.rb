@@ -24,6 +24,8 @@ Redmine::Plugin.register :redmine_itil_priority do
                { itil_priority_settings: [:update],
                  itil_priority_settings_api: [:project, :update_project] },
                require: :member
+    # Without it a user sets impact and urgency only; the priority follows the matrix.
+    permission :override_itil_priority, {}
   end
 
   settings partial: 'settings/itil_priority',

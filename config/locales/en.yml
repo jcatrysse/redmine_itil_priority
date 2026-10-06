@@ -11,3 +11,8 @@ en:
   label_mode_default: "Use generic settings"
   label_mode_custom: "Custom"
   label_language: "Language"
+  permission_manage_itil_priority_settings: "Manage ITIL priority settings"
+  permission_override_itil_priority: "Override ITIL priority"
+  field_itil_priority_linked: "Priority linked to impact and urgency"
+  label_itil_priority_linked: "Priority calculated from impact and urgency"
+  label_itil_priority_unlinked: "Priority set by hand, not linked to impact and urgency"

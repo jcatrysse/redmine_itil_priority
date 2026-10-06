@@ -11,3 +11,8 @@ ja:
   label_mode_default: "一般設定を使用"
   label_mode_custom: "カスタム"
   label_language: "言語"
+  permission_manage_itil_priority_settings: "ITIL優先度の設定の管理"
+  permission_override_itil_priority: "ITIL優先度の上書き"
+  field_itil_priority_linked: "影響と緊急度に連動する優先度"
+  label_itil_priority_linked: "影響と緊急度から計算された優先度"
+  label_itil_priority_unlinked: "手動で設定された優先度（影響と緊急度に連動しない）"

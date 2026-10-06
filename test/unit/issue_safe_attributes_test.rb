@@ -26,7 +26,7 @@ class ItilIssueSafeAttributesTest < ActiveSupport::TestCase
 
     priority = issue.priority_id
     issue.init_journal(user)
-    issue.safe_attributes = { 'impact_id' => '3', 'urgency_id' => '3', 'notes' => 'Only a note' }, user
+    issue.send(:safe_attributes=, { 'impact_id' => '3', 'urgency_id' => '3', 'notes' => 'Only a note' }, user)
     assert_nil issue.impact_id
     assert_nil issue.urgency_id
     assert_equal priority, issue.priority_id

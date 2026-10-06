@@ -11,3 +11,8 @@ nl:
   label_mode_default: "Generieke instellingen gebruiken"
   label_mode_custom: "Aangepast"
   label_language: "Taal"
+  permission_manage_itil_priority_settings: "ITIL-prioriteitsinstellingen beheren"
+  permission_override_itil_priority: "ITIL-prioriteit overschrijven"
+  field_itil_priority_linked: "Prioriteit gekoppeld aan impact en urgentie"
+  label_itil_priority_linked: "Prioriteit berekend uit impact en urgentie"
+  label_itil_priority_unlinked: "Prioriteit met de hand ingesteld, niet gekoppeld aan impact en urgentie"

@@ -81,6 +81,23 @@ module RedmineItilPriority
       # rubocop:enable Metrics/MethodLength, Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
       module PrependedMethods
+        # Where ITIL priority is active, only a user with the permission
+        # "override ITIL priority" sets the priority itself or unlinks it; the
+        # others set impact and urgency and the priority follows the matrix.
+        # A priority made read-only by the workflow cannot be unlinked either.
+        # Through safe attributes this holds for the form, bulk edit, context
+        # menu, REST API and incoming mail alike.
+        def safe_attribute_names(user = nil)
+          names = super
+          return names unless (names & %w[priority_id itil_priority_linked]).any?
+          return names unless RedmineItilPriority.settings_for(project, tracker)
+
+          unless names.include?('priority_id') && (user || User.current).allowed_to?(:override_itil_priority, project)
+            names -= %w[priority_id itil_priority_linked]
+          end
+          names
+        end
+
         # The setters recalculate as they are called, so the result must not
         # depend on the order a form, an API client or a mail sends: the link
         # flag first, the priority last.

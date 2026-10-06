@@ -11,3 +11,8 @@ pt:
   label_mode_default: "Usar configurações genéricas"
   label_mode_custom: "Personalizado"
   label_language: "Idioma"
+  permission_manage_itil_priority_settings: "Gerir as configurações de prioridade ITIL"
+  permission_override_itil_priority: "Substituir a prioridade ITIL"
+  field_itil_priority_linked: "Prioridade ligada ao impacto e à urgência"
+  label_itil_priority_linked: "Prioridade calculada a partir do impacto e da urgência"
+  label_itil_priority_unlinked: "Prioridade definida manualmente, não ligada ao impacto e à urgência"
