@@ -121,6 +121,13 @@ module RedmineItilPriority
           names - %w[impact_id urgency_id]
         end
 
+        # Redmine 7 webhooks render core's issues/show.api.rsb from Rails.root,
+        # past the plugin's override; render the plugin's, so the payload has
+        # impact, urgency and the link like the REST API.
+        def webhook_payload_api_template
+          File.expand_path('../../../app/views/issues/show.api.rsb', __dir__)
+        end
+
         # Core copies the attributes in column order, so impact and urgency,
         # assigned after the priority, recalculate it. A copy of an issue
         # whose priority was set by hand keeps that priority.
