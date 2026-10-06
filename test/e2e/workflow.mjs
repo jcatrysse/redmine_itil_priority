@@ -22,6 +22,7 @@ async function setRules(urgency, impact) {
 }
 
 await setRules('readonly', 'required');
+try {
 await t.shot('permissions', 'Administration > Workflow > Fields permissions: Impact and Urgency listed with the core fields; for Reporter/Bug/New urgency read-only, impact required');
 await t.page.click('#workflow_form input[type=submit]');
 await t.settle();
@@ -46,10 +47,12 @@ await t.go(`/issues/${issue.id}/edit`);
 if (!(await t.page.locator('select#issue_urgency_id').count())) fail('manager: urgency not editable');
 await t.shot('other-role', 'The manager\'s role has no rules: both fields editable', { full: false });
 
-// back to no rules
-await setRules('', '');
-await t.page.click('#workflow_form input[type=submit]');
-await t.settle();
-t.check('reset rules');
+} finally {
+  // back to no rules, also when a step above failed: the other scenarios need them gone
+  await setRules('', '');
+  await t.page.click('#workflow_form input[type=submit]');
+  await t.settle();
+  t.check('reset rules');
+}
 
 await t.done();

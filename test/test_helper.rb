@@ -34,7 +34,16 @@ module RedmineItilPriority
       # and a test's rollback leaves either behind.
       Setting.clear_cache
       RedmineItilPriority.clear_cache
+      grant_issue_detail_permissions
       project
+    end
+
+    # Run together with GEOxyz's redmine_view_issue_description, the core
+    # fixture roles need its permission to open an issue at all.
+    def grant_issue_detail_permissions
+      return unless Redmine::AccessControl.permission(:view_issue_description)
+
+      Role.where(id: [1, 2, 3]).each { |role| role.add_permission!(:view_issue_description) }
     end
 
     def role_without_override(role_id)
