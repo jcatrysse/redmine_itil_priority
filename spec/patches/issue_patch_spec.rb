@@ -25,7 +25,7 @@ RSpec.describe RedmineItilPriority::Patches::IssuePatch do
     proj = project
     trk = tracker
     Class.new do
-      attr_reader :impact_id, :urgency_id, :priority_id
+      attr_reader :impact_id, :urgency_id, :priority_id, :itil_priority_linked
       attr_accessor :priority
 
       class << self
@@ -120,5 +120,25 @@ RSpec.describe RedmineItilPriority::Patches::IssuePatch do
     issue.urgency_id = 'none'
     expect(issue.impact_id).to be_nil
     expect(issue.urgency_id).to be_nil
+  end
+  it 'recalculates the priority when linked again' do
+    issue.itil_priority_linked = '0'
+    issue.impact_id = 3
+    issue.urgency_id = 2
+    issue.priority_id = 1
+    expect(issue.priority_id).to eq(1)
+
+    issue.itil_priority_linked = '1'
+    expect(issue.itil_priority_linked).to be(true)
+    expect(issue.priority_id).to eq(3)
+  end
+
+  it 'treats a blank link flag as linked and false or 0 as unlinked' do
+    issue.itil_priority_linked = ''
+    expect(issue.itil_priority_active?).to be(true)
+    issue.itil_priority_linked = false
+    expect(issue.itil_priority_active?).to be(false)
+    issue.itil_priority_linked = 'false'
+    expect(issue.itil_priority_active?).to be(false)
   end
 end

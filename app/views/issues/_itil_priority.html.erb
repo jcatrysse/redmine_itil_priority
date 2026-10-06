@@ -15,7 +15,7 @@
     <%= content_tag(:span, settings[key], id: key, style: 'display:none;') %>
   <% end %>
 <% end %>
-<p id="itil_priority_field" data-new-record="<%= @issue.new_record? %>" data-default-priority="<%= IssuePriority.default.try(:id) %>">
+<p id="itil_priority_field" data-new-record="<%= @issue.new_record? %>" data-default-priority="<%= IssuePriority.default.try(:id) %>" data-current-priority="<%= @issue.priority_id %>">
 <label><%= l(:field_priority) %></label>
 <span class=itil-priority>
   <label class=inline><%= l(:field_urgency) %></label>
@@ -23,7 +23,7 @@
   <br>
   <label class=inline><%= l(:field_impact) %></label>
   <%= select_tag "issue[impact_id]", options_for_select([["", ""]] + RedmineItilPriority.impact_options(@project, @issue.tracker), @issue.impact_id) %>
-  <%= hidden_field_tag 'issue[itil_priority_linked]', (@issue.impact_id && @issue.urgency_id) ? '1' : '0', id: 'itil_priority_linked' %>
+  <%= hidden_field_tag 'issue[itil_priority_linked]', @issue.itil_priority_active? ? '1' : '0', id: 'itil_priority_linked' %>
   <span class=real-priority>
     <%= image_tag("stock_link.png", plugin: "redmine_itil_priority", id: "itil_priority_link", style: 'cursor:pointer;') %>
     <span class=priority>
@@ -42,6 +42,7 @@ $(function() {
   var $link = $("#itil_priority_link")
   var linked = $('#itil_priority_linked').val() !== '0'
   var defaultPriority = String($("#itil_priority_field").data('default-priority'))
+  var currentPriority = String($("#itil_priority_field").data('current-priority'))
 
   function recalculateItilPriority(impact, urgency) {
     var priority_id = $("#priority_i" + impact + "_u" + urgency).text()
@@ -68,7 +69,8 @@ $(function() {
     var urgency = $("#issue_urgency_id").val()
     if (linked) {
       if (impact === '' || urgency === '') {
-        $select.val(defaultPriority)
+        // without both, a new issue gets the default priority, an existing one keeps its own
+        $select.val($("#itil_priority_field").data('new-record') ? defaultPriority : currentPriority)
         $("#real-priority-display").text($select.find("option:selected").text())
       } else {
         recalculateItilPriority(impact, urgency)

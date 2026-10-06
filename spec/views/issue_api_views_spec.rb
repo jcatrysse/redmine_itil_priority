@@ -27,9 +27,14 @@ RSpec.describe 'issue API views' do
 
       expect(core).to eq([])
       # Besides the ITIL lines, only the 6.0 journal fields, which 5.1 leaves out.
-      allowed = /\A(api\.(impact|urgency)_id |api\.updated_on journal\.|api\.updated_by\(:id => journal\.|if Redmine::VERSION::MAJOR >= 6\z|end\z)/
+      allowed = /\A(api\.(impact|urgency)_id |api\.itil_priority_linked |api\.updated_on journal\.|api\.updated_by\(:id => journal\.|if Redmine::VERSION::MAJOR >= 6\z|end\z)/
       expect(extra.grep_v(allowed)).to eq([])
     end
+  end
+
+  it 'exposes whether the priority is linked in both API views' do
+    expect(index_view).to include('api.itil_priority_linked issue.itil_priority_active?')
+    expect(show_view).to include('api.itil_priority_linked @issue.itil_priority_active?')
   end
 
   it 'exposes impact and urgency in show API view' do

@@ -13,11 +13,28 @@ module RedmineItilPriority
         # Same condition as core's priority_id: impact and urgency change the priority.
         safe_attributes 'impact_id', 'urgency_id', 'itil_priority_linked',
                         if: lambda { |issue, user| issue.new_record? || issue.attributes_editable?(user) }
-        attr_accessor :itil_priority_linked
+        prepend PrependedMethods
+      end
+
+      # itil_priority_linked is a boolean column: '0', 'false' and false unlink,
+      # anything else (blank included) links.
+      def self.linked_value(value)
+        !%w[0 false f off no].include?(value.to_s.strip.downcase)
       end
 
       def itil_priority_active?
-        itil_priority_linked.to_s != '0'
+        IssuePatch.linked_value(itil_priority_linked)
+      end
+
+      # Linking again recalculates the priority from impact and urgency.
+      def itil_priority_linked=(value)
+        linked = IssuePatch.linked_value(value)
+        write_attribute(:itil_priority_linked, linked)
+        return unless linked && impact_id && urgency_id
+
+        settings = settings_for_mapping
+        priority = settings && settings["priority_i#{impact_id}_u#{urgency_id}"]
+        write_attribute(:priority_id, priority) if priority.present?
       end
 
       def urgency_id=(pid)
@@ -62,6 +79,34 @@ module RedmineItilPriority
         end
       end
       # rubocop:enable Metrics/MethodLength, Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+
+      module PrependedMethods
+        # The setters recalculate as they are called, so the result must not
+        # depend on the order a form, an API client or a mail sends: the link
+        # flag first, the priority last.
+        def safe_attributes=(attrs, user = User.current)
+          attrs = attrs.to_unsafe_hash if attrs.respond_to?(:to_unsafe_hash)
+          if attrs.is_a?(Hash) && (attrs.key?('itil_priority_linked') || attrs.key?('priority_id'))
+            attrs = attrs.slice('itil_priority_linked').
+                      merge(attrs.except('itil_priority_linked', 'priority_id')).
+                      merge(attrs.slice('priority_id'))
+          end
+          super
+        end
+
+        # Core copies the attributes in column order, so impact and urgency,
+        # assigned after the priority, recalculate it. A copy of an issue
+        # whose priority was set by hand keeps that priority.
+        def copy_from(arg, options = {})
+          super
+          source = @copied_from
+          if source.respond_to?(:itil_priority_active?) && !source.itil_priority_active?
+            write_attribute(:itil_priority_linked, false)
+            write_attribute(:priority_id, source.priority_id)
+          end
+          self
+        end
+      end
 
       private
 
