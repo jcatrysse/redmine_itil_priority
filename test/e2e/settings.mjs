@@ -63,6 +63,13 @@ for (const name of ['Bug', 'Feature', 'Support']) await t.page.selectOption(`${t
 await t.page.click('form[action$="itil_priority_settings"] input[type=submit]');
 await t.settle();
 t.check('reset project');
+await t.login('admin');
+await t.go('/settings/plugin/redmine_itil_priority');
+await t.sudo();
+await t.page.fill('textarea[name="settings[help_urgency]"]', '');
+await t.page.click('form input[name=commit], #settings input[type=submit]');
+await t.settle();
+t.check('reset global');
 
 await t.done();
 
