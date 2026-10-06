@@ -12,7 +12,23 @@ module RedmineItilPriority
 
       included do
         Query.operators_by_filter_type[:list_optional] |= %w[>= <=]
-        self.available_columns << QueryColumn.new(
+        # Core's QueryColumn ignores a block and shows the raw 1..3; this one
+        # shows the label (list, CSV, PDF and group headers alike).
+        label_column = Class.new(QueryColumn) do
+          def initialize(name, options = {}, &block)
+            super(name, options)
+            @label_block = block
+          end
+
+          def value(object)
+            @label_block.call(object)
+          end
+
+          def value_object(object)
+            value(object)
+          end
+        end
+        self.available_columns << label_column.new(
           :impact_id,
           caption: :label_impact,
           sortable: "#{Issue.table_name}.impact_id",
@@ -20,7 +36,7 @@ module RedmineItilPriority
         ) do |issue|
           RedmineItilPriority.impact_label(issue)
         end
-        self.available_columns << QueryColumn.new(
+        self.available_columns << label_column.new(
           :urgency_id,
           caption: :label_urgency,
           sortable: "#{Issue.table_name}.urgency_id",
