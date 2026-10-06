@@ -10,7 +10,9 @@ module RedmineItilPriority
       extend ActiveSupport::Concern
 
       included do
-        safe_attributes 'impact_id', 'urgency_id', 'itil_priority_linked'
+        # Same condition as core's priority_id: impact and urgency change the priority.
+        safe_attributes 'impact_id', 'urgency_id', 'itil_priority_linked',
+                        if: lambda { |issue, user| issue.new_record? || issue.attributes_editable?(user) }
         attr_accessor :itil_priority_linked
       end
 
