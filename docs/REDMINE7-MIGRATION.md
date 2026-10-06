@@ -156,6 +156,7 @@ Combined run: redmine70-migration branches of redmine_issue_field_visibility, re
 - OpenAI review (`./.codex/openai_review.sh`, gpt-5), two runs:
   - range 51cd4c0..b944f8d: "No findings" in both parts (`docs/reviews/openai-2026-10-06-b944f8d.md`).
   - range 51cd4c0..fae24d3 (after the docs): 3 major, 1 minor (`docs/reviews/openai-2026-10-06-fae24d3.md`, each with a Resolution line). Accepted and fixed: impact, urgency and the link were assignable through the API or a mixed bulk edit where ITIL is inactive (pre-existing), now dropped from the safe attributes there, with tests. Not needed: the context-menu finding (the hook already renders only when every selected issue has ITIL active). Not changed: the kit's CI workflow uploads redmine/log, which only holds throwaway test credentials; a point for the migration kit.
+  - range 51cd4c0..b973017 (after the fix): the same minor CI-log point again, and one "major" on test/unit/settings_cache_test.rb that is a false positive (Redmine's Setting writes its YAML itself, no AR serialize; the test passes on both databases). Nothing new accepted, so the review loop stops here (`docs/reviews/openai-2026-10-06-b973017.md`).
 
 ## Open questions for Jan
 
