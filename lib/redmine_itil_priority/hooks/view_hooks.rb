@@ -56,6 +56,34 @@ module RedmineItilPriority
         context[:controller].render_to_string(partial: 'issues/itil_priority_bulk_edit', locals: context)
       end
 
+      # The history stores impact and urgency as 1..3 and the link as 0/1:
+      # show the configured labels and Yes/No instead. Only the in-memory
+      # detail changes, and only raw values, so a second rendering (html and
+      # text mail) leaves the labels alone.
+      def helper_issues_show_detail_after_setting(context = {})
+        detail = context[:detail]
+        return '' unless detail && detail.property == 'attr'
+
+        case detail.prop_key
+        when 'impact_id', 'urgency_id'
+          issue = detail.journal&.journalized
+          field = detail.prop_key.delete_suffix('_id')
+          %i[value old_value].each do |attr|
+            raw = detail.send(attr).to_s
+            next unless raw.match?(/\A[1-3]\z/)
+
+            label = RedmineItilPriority.label("label_#{field}_#{raw}", issue&.project, issue&.tracker)
+            detail.send("#{attr}=", label) if label.present?
+          end
+        when 'itil_priority_linked'
+          %i[value old_value].each do |attr|
+            raw = detail.send(attr).to_s
+            detail.send("#{attr}=", l(raw == '0' ? :general_text_No : :general_text_Yes)) if %w[0 1].include?(raw)
+          end
+        end
+        ''
+      end
+
     end
   end
 end
