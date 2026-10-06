@@ -23,7 +23,7 @@ what is left. Written 2026-10-06 from a measured analysis (report at the bottom)
 | After sync | n.v.t. |
 | Complexity (1 trivial .. 5 rewrite) | 1 |
 | Measured on | Redmine 7.0.1 (7.0-stable-GEOxyz + latest 7.0-stable), Rails 8.1.3.1, Ruby 3.3.6, PostgreSQL 16 and MariaDB 10.11 |
-| Branch head when this file was written | `51cd4c0` |
+| Branch head when this file was written | `d30ddf9` |
 
 ## Already on this branch
 
@@ -39,7 +39,7 @@ In this order: things that break, security, the GEOxyz changes, the open items, 
 2. Nice to have: info icons next to impact and urgency that explain the levels, with the text manageable per instance, project and tracker (decide the storage: plugin settings for the instance, project settings tab, tracker-level override).
 3. Webhooks: add impact_id/urgency_id to the webhook payload (core renders its own issues/show.api.rsb, not the plugin override).
 
-**Open items from the analysis** (Dutch; where they repeat a priority item, the priority item wins)
+**Open items from the analysis** (Dutch; where they conflict with a decision or a priority item above, those win)
 
 4. issues/index.api.rsb en show.api.rsb overriden core; bij elke 7.0.x-update tegen core diffen (nu identiek op impact/urgency na)
 5. Webhooks (7.0) gebruiken core show.api.rsb: impact_id/urgency_id ontbreken in webhook-payload
@@ -171,7 +171,9 @@ results quoted in the analysis come from it.
 - **5.1 compatibility**: prefer fixes that also run on Redmine 5.1 so they can be merged early;
   say so when a fix cannot.
 - **Git**: work on `redmine70-migration` only; never push to the default branch; never force-push
-  a branch someone else uses. Descriptive commit messages (what and why).
+  a branch someone else uses. Descriptive commit messages (what and why). Push after every
+  commit, together with the updated status in this file: a cloud session can stop at a usage
+  limit, and work that is not pushed is lost with its container.
 - **GitHub Actions**: manual only (`workflow_dispatch`). Do not add push, pull_request or schedule
   triggers.
 
