@@ -32,8 +32,11 @@
       ['impact', RedmineItilPriority.impact_options(@project, @issue.tracker)]].each_with_index do |(field, options), index| %>
     <%= tag.br if index > 0 %>
     <label class=inline><%= l(:"field_#{field}") %><%= content_tag(:span, ' *', class: 'required') if @issue.required_attribute?("#{field}_id") %><% if settings["help_#{field}"].present? %>
-      <%= link_to (respond_to?(:sprite_icon) ? sprite_icon('help') : '(?)'), '#', class: 'itil-help-toggle icon-only', title: l(:label_itil_help),
-                  data: { target: "itil_help_#{field}" } %><% end %></label>
+      <% if respond_to?(:sprite_icon) %>
+      <%= link_to sprite_icon('help'), '#', class: 'itil-help-toggle icon-only', title: l(:label_itil_help), data: { target: "itil_help_#{field}" } %>
+      <% else %>
+      <%= link_to l(:label_itil_help), '#', class: 'itil-help-toggle icon icon-only icon-help', title: l(:label_itil_help), data: { target: "itil_help_#{field}" } %>
+      <% end %><% end %></label>
     <% value = @issue.send("#{field}_id") %>
     <% if @issue.safe_attribute?("#{field}_id") %>
       <%= select_tag "issue[#{field}_id]", options_for_select([["", ""]] + options, value) %>

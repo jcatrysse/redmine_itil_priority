@@ -19,6 +19,12 @@ const port = server.address().port;
 const host = Object.values(os.networkInterfaces()).flat().find((i) => i.family === 'IPv4' && !i.internal).address;
 
 await t.login('manager');
+if ((await t.page.request.get(`${t.BASE}/webhooks/new`)).status() === 404) {
+  console.log('webhook: no webhooks in this Redmine (before 7.0), nothing to check');
+  server.close();
+  await t.done();
+  process.exit(0);
+}
 await t.go('/webhooks/new');
 await t.page.fill('#webhook_url', `http://${host}:${port}/itil`);
 await t.page.check('#webhook_active');

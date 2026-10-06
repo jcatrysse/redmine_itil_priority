@@ -35,7 +35,7 @@ WorkflowPermission.where(field_name: %w[impact_id urgency_id]).delete_all
 
 Setting.mail_handler_api_enabled = '1'
 Setting.mail_handler_api_key = 'e2e-mail-key'
-Setting.webhooks_enabled = '1'
+Setting.webhooks_enabled = '1' if Setting.respond_to?(:webhooks_enabled=)   # Redmine 7
 RedmineItilPriority.clear_cache
 
 puts "ITIL seed: matrix by priority name, Reporter without override (#{reporter&.has_permission?(:override_itil_priority).inspect}), " \
