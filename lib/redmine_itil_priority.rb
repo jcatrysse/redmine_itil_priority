@@ -23,6 +23,13 @@ module RedmineItilPriority
     @enabled_cache&.clear
   end
 
+  # The in-process memos live for one request: core calls Setting.check_cache
+  # at the start of each, see SettingPatch.
+  def clear_memo
+    @settings_cache&.clear
+    @enabled_cache&.clear
+  end
+
   def log(message = nil, level: :info, &block)
     return unless logging_enabled
     if block
