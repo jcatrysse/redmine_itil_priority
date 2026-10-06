@@ -30,6 +30,9 @@ module RedmineItilPriority
     def itil_setup(project = Project.find(1), extra = {})
       project.enable_module!(:itil_priority)
       Setting.plugin_redmine_itil_priority = LABELS.merge(MATRIX).merge('default_tracker_mode' => 'default').merge(extra)
+      # Redmine 5.1 caches Setting[name] by string and Setting.name by symbol,
+      # and a test's rollback leaves either behind.
+      Setting.clear_cache
       RedmineItilPriority.clear_cache
       project
     end

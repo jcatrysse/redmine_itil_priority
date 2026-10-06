@@ -118,8 +118,7 @@ class ItilOverridePriorityTest < ActiveSupport::TestCase
   end
 
   def test_priority_stays_a_core_field_where_itil_is_inactive
-    Setting.plugin_redmine_itil_priority = Setting.plugin_redmine_itil_priority.merge('default_tracker_mode' => 'inactive')
-    RedmineItilPriority.clear_cache
+    itil_setup(Project.find(1), 'default_tracker_mode' => 'inactive')
     assert Issue.find(1).safe_attribute?('priority_id', @helpdesk)
   end
 

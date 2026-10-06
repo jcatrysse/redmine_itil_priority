@@ -24,8 +24,7 @@ class ItilHelpTextsTest < Redmine::IntegrationTest
   end
 
   def test_text_is_sanitized
-    Setting.plugin_redmine_itil_priority = Setting.plugin_redmine_itil_priority.merge('help_urgency' => '<script>alert(1)</script>')
-    RedmineItilPriority.clear_cache
+    itil_setup(Project.find(1), 'help_urgency' => '<script>alert(1)</script>')
     log_user('jsmith', 'jsmith')
     get '/issues/1/edit'
     assert_select '#itil_help_urgency script', 0
