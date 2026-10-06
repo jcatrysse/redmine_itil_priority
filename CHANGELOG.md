@@ -9,6 +9,7 @@
 * Issue list columns, CSV/PDF and the history show impact and urgency labels instead of 1..3
 * Redmine 7 webhooks carry impact_id, urgency_id and itil_priority_linked
 * Fix: users who may only add notes could change impact and urgency, and through them the priority
+* Impact, urgency and the link are not assignable (API, bulk edit) where ITIL priority is inactive
 * Fix: setting changes reach every server process (Puma workers), and a project that gets the module later has the filters without a restart
 * SVG icons on Redmine 6 and later (link toggle, context menu arrows)
 

@@ -83,12 +83,14 @@ In this order: things that break, security, the GEOxyz changes, the open items, 
 11. Issue list columns, CSV and PDF showed 1..3 instead of labels: core's QueryColumn ignores a block (ae006a8).
 12. Settings memo per process forever: other Puma/Passenger processes kept the old matrix; a project that got the module later had no filters until a restart (60f90c2).
 13. Info icon unclickable behind the priority block (found by the e2e run, 7c98816); invisible on Redmine 5.1 (064b479).
+14. Impact, urgency and the link were assignable through the REST API (or a bulk edit over mixed trackers) where ITIL is inactive; now not (OpenAI review finding).
 
 **Left (not done, with reason)**
 
-14. The issue page (show) does not display impact and urgency, only the form does. Not asked; would be a small `view_issues_show_details_bottom` hook. Recommendation: add it in a follow-up if helpdesk users need to see them without opening the form.
-15. Different labels per tracker are merged in filters across trackers (existing behaviour of `options_for`), unchanged.
-16. `.codex/test_setup.sh` fails when run as root with `RMP_PROVISION_DB=1` (`$SUDO -u postgres` with an empty `$SUDO`). Worked around by creating the role by hand and `RMP_PROVISION_DB=0`; the script belongs to the migration kit, fix it there.
+15. The issue page (show) does not display impact and urgency, only the form does. Not asked; would be a small `view_issues_show_details_bottom` hook. Recommendation: add it in a follow-up if helpdesk users need to see them without opening the form.
+16. Different labels per tracker are merged in filters across trackers (existing behaviour of `options_for`), unchanged.
+17. `.codex/test_setup.sh` fails when run as root with `RMP_PROVISION_DB=1` (`$SUDO -u postgres` with an empty `$SUDO`). Worked around by creating the role by hand and `RMP_PROVISION_DB=0`; the script belongs to the migration kit, fix it there.
+18. Migration kit: the manual CI workflow uploads `redmine/log/*.log` as an artifact; harmless with the throwaway test credentials, but better filtered or left out (OpenAI review, minor).
 
 ## GEOxyz changes to review or re-apply
 
@@ -137,10 +139,12 @@ Baseline before any change (7.0-stable-GEOxyz 8067e23, PostgreSQL 16): rspec 54 
 
 | | Redmine 7.0-stable-GEOxyz, PostgreSQL 16.15 | Redmine 7.0-stable-GEOxyz, MariaDB 10.11.14 | Redmine 5.1-stable, PostgreSQL, Ruby 3.2 | 7.0 with 6 other GEOxyz plugins, PostgreSQL |
 |---|---|---|---|---|
-| minitest (test/, real Redmine) | 55 runs, 248 assertions, 0 failures | 55 runs, 248 assertions, 0 failures | 55 runs, 203 assertions, 0 failures, 2 skips (webhooks, SVG sprites: not in 5.1) | 55 runs, 248 assertions, 0 failures |
+| minitest (test/, real Redmine) | 57 runs, 253 assertions, 0 failures | 57 runs, 253 assertions, 0 failures | 57 runs, 208 assertions, 0 failures, 2 skips (webhooks, SVG sprites: not in 5.1) | 57 runs, 253 assertions, 0 failures |
 | rspec (spec/) | 59 examples, 0 failures | 59 examples, 0 failures | 59 examples, 0 failures | 59 examples, 0 failures |
 | migrations down to 0 and up | OK | OK | n/a | n/a |
 | e2e (real server, production mode) | smoke 14, core 6, 7 scenarios, 58 screenshots, 0 problems | same, 58 screenshots, 0 problems | smoke 14, core 6, 6 scenarios, 55 screenshots, 0 problems (webhook scenario n/a: no webhooks in 5.1) | 58 screenshots, 0 problems |
+
+Numbers from the final code (after the review fix). The 5.1 and combined e2e runs are from b944f8d, before that last model-only change; their test suites were re-run on the final code.
 
 Committed screenshots: the PostgreSQL run (`docs/e2e/`) and the before run (`docs/e2e/before/`); the MariaDB, 5.1 and combined runs were looked at and gave the same pictures, not committed.
 
@@ -149,7 +153,9 @@ Combined run: redmine70-migration branches of redmine_issue_field_visibility, re
 ## Review
 
 - Own adversarial review of the whole diff: findings 8 to 13 above came from tests and the e2e runs and are fixed; nothing open.
-- OpenAI review (`./.codex/openai_review.sh`, gpt-5, range 51cd4c0..b944f8d, 2 requests): "No findings" in both parts. `docs/reviews/openai-2026-10-06-b944f8d.md`.
+- OpenAI review (`./.codex/openai_review.sh`, gpt-5), two runs:
+  - range 51cd4c0..b944f8d: "No findings" in both parts (`docs/reviews/openai-2026-10-06-b944f8d.md`).
+  - range 51cd4c0..fae24d3 (after the docs): 3 major, 1 minor (`docs/reviews/openai-2026-10-06-fae24d3.md`, each with a Resolution line). Accepted and fixed: impact, urgency and the link were assignable through the API or a mixed bulk edit where ITIL is inactive (pre-existing), now dropped from the safe attributes there, with tests. Not needed: the context-menu finding (the hook already renders only when every selected issue has ITIL active). Not changed: the kit's CI workflow uploads redmine/log, which only holds throwaway test credentials; a point for the migration kit.
 
 ## Open questions for Jan
 

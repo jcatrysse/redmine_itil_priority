@@ -1,6 +1,6 @@
 # settings
 
-Run 2026-10-06T20:36:55.525Z against http://127.0.0.1:3000.
+Run 2026-10-06T20:46:13.458Z against http://127.0.0.1:3000.
 
 | screenshot | user | URL | shows |
 |---|---|---|---|

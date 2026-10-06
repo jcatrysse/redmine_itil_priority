@@ -122,6 +122,27 @@ class ItilOverridePriorityTest < ActiveSupport::TestCase
     assert Issue.find(1).safe_attribute?('priority_id', @helpdesk)
   end
 
+  # The fields are not shown there, so an API client or a bulk edit over
+  # mixed trackers must not store them either.
+  def test_impact_urgency_and_link_are_not_assignable_where_itil_is_inactive
+    itil_setup(Project.find(1), 'default_tracker_mode' => 'inactive')
+    issue = Issue.find(1)
+    %w[impact_id urgency_id itil_priority_linked].each do |name|
+      assert_not issue.safe_attribute?(name, @operator), "#{name} must not be safe"
+    end
+    issue.send(:safe_attributes=, { 'impact_id' => '3', 'urgency_id' => '3', 'itil_priority_linked' => '0',
+                                    'priority_id' => '8' }, @operator)
+    issue.save!
+    issue.reload
+    assert_equal [nil, nil, true, 8], [issue.impact_id, issue.urgency_id, issue.itil_priority_linked, issue.priority_id]
+  end
+
+  def test_impact_and_urgency_are_not_assignable_without_the_module
+    Project.find(1).disable_module!(:itil_priority)
+    RedmineItilPriority.clear_cache
+    assert_not Issue.find(1).safe_attribute?('impact_id', @operator)
+  end
+
   def test_priority_stays_a_core_field_without_the_module
     Project.find(1).disable_module!(:itil_priority)
     RedmineItilPriority.clear_cache
