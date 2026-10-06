@@ -3,12 +3,12 @@
 <% can_override = @issue.safe_attribute?('priority_id') && @issue.safe_attribute?('itil_priority_linked') %>
 <% linked = @issue.itil_priority_active? %>
 <style>
-  .itil-priority { position:relative; display:inline-block; min-width:440px; min-height:50px;
+  .itil-priority { position:relative; display:inline-block; min-width:455px; min-height:50px;
                    background-color:#fffff3; padding:4px 6px; border:1px solid #eee; }
-  .itil-priority label.inline { font-weight:normal; display:inline-block; width:60px; text-align:left; }
+  .itil-priority label.inline { font-weight:normal; display:inline-block; width:75px; text-align:left; white-space:nowrap; }
   .itil-priority select { width:150px !important; }
   .itil-priority .itil-value { display:inline-block; width:150px; }
-  .real-priority { box-sizing:border-box; width:100%; position:absolute; top:0; left:230px; height:100%; padding-top:1.4em; }
+  .real-priority { box-sizing:border-box; width:100%; position:absolute; top:0; left:245px; height:100%; padding-top:1.4em; }
   .real-priority > .priority { position:absolute; top:1.4em; left:25px; font-size:110%; }
   #itil_priority_link.unlink { opacity:0.4; }
   #itil_priority_link .itil-unlinked, #itil_priority_link.unlink .itil-linked { display:none; }
