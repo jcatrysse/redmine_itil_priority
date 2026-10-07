@@ -8,6 +8,7 @@ require_relative 'lib/redmine_itil_priority/patches/projects_helper_patch'
 require_relative 'lib/redmine_itil_priority/patches/setting_patch'
 require_relative 'lib/redmine_itil_priority/patches/mail_handler_patch'
 require_relative 'lib/redmine_itil_priority/patches/workflow_patch'
+require_relative 'lib/redmine_itil_priority/patches/helpdesk_patch'
 
 # Toggle to enable verbose plugin logging.
 RedmineItilPriority.logging_enabled = false
@@ -49,3 +50,7 @@ Setting.include RedmineItilPriority::Patches::SettingPatch
 MailHandler.prepend RedmineItilPriority::Patches::MailHandlerPatch
 WorkflowPermission.prepend RedmineItilPriority::Patches::WorkflowPatch::WorkflowPermissionPatch
 WorkflowsController.prepend RedmineItilPriority::Patches::WorkflowPatch::WorkflowsControllerPatch
+# Only with RedmineUP's helpdesk installed (it loads before this plugin).
+if Redmine::Plugin.installed?(:redmine_contacts_helpdesk)
+  HelpdeskMailRecipient::IssueRecipient.prepend RedmineItilPriority::Patches::HelpdeskPatch::IssueRecipientPatch
+end

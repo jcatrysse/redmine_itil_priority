@@ -94,7 +94,7 @@ module RedmineItilPriority
           return names unless (names & %w[priority_id itil_priority_linked impact_id urgency_id]).any?
           return names - %w[impact_id urgency_id itil_priority_linked] unless RedmineItilPriority.settings_for(project, tracker)
 
-          unless names.include?('priority_id') && (user || User.current).allowed_to?(:override_itil_priority, project)
+          unless names.include?('priority_id') && RedmineItilPriority.may_override_priority?(user || User.current, project)
             names -= %w[priority_id itil_priority_linked]
           end
           names

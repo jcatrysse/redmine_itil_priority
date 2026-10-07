@@ -41,3 +41,13 @@ RedmineItilPriority.clear_cache
 
 puts "ITIL seed: matrix by priority name, Reporter without override (#{reporter&.has_permission?(:override_itil_priority).inspect}), " \
      "Manager with override (#{Role.find_by(name: 'E2E full')&.has_permission?(:override_itil_priority).inspect})"
+
+# RedmineUP helpdesk, where installed: helpdesk priority Urgent on the private
+# project, for test/e2e/helpdesk_mail.mjs.
+if Redmine::Plugin.installed?(:redmine_contacts_helpdesk) && (private_project = Project.find_by(identifier: 'e2e-private'))
+  private_project.enable_module!(:contacts)
+  private_project.enable_module!(:contacts_helpdesk)
+  ContactsSetting['helpdesk_issue_priority', private_project.id] = (prio['Urgent'] || IssuePriority.default).id.to_s
+  Role.anonymous.remove_permission!(:override_itil_priority) if Role.anonymous.has_permission?(:override_itil_priority)
+  puts 'ITIL seed: helpdesk priority Urgent on e2e-private'
+end

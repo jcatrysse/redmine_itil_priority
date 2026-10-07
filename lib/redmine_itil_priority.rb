@@ -103,6 +103,34 @@ module RedmineItilPriority
     end
   end
 
+  # Whether the user may set the priority by hand or unlink it in the project.
+  #
+  # RedmineUP's helpdesk creates tickets from mail as the anonymous user
+  # (User.current is nil while it receives), and Redmine gives the Anonymous
+  # role no permissions on a private project. So that helpdesk tickets keep
+  # the helpdesk's configured priority (Jan, 2026-10-07: "Helpdeskprioriteit
+  # behouden"), the Anonymous role's permission counts while the helpdesk
+  # receives mail, on private projects too. Nowhere else.
+  def may_override_priority?(user, project)
+    return true if user.allowed_to?(:override_itil_priority, project)
+
+    helpdesk_mail? && user.anonymous? && project.respond_to?(:module_enabled?) &&
+      project.module_enabled?(:itil_priority) && Role.anonymous.has_permission?(:override_itil_priority)
+  end
+
+  # Marks the block as the helpdesk receiving mail (see may_override_priority?).
+  def helpdesk_mail
+    previous = Thread.current[:itil_priority_helpdesk_mail]
+    Thread.current[:itil_priority_helpdesk_mail] = true
+    yield
+  ensure
+    Thread.current[:itil_priority_helpdesk_mail] = previous
+  end
+
+  def helpdesk_mail?
+    Thread.current[:itil_priority_helpdesk_mail] == true
+  end
+
   # Returns true if ITIL priority is enabled for at least one tracker in the
   # given project scope. When a project is provided, all its descendants are
   # checked as well. If no project is given, any active project with the module
