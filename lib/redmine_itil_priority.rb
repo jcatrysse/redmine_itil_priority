@@ -5,7 +5,7 @@ require 'set'
 # Module containing helpers for ITIL priorities.
 module RedmineItilPriority
   CACHE_PREFIX = 'itil_priority'
-  ALLOWED_SETTING_KEY_PATTERN = /\A(?:label_(?:impact|urgency)_\d|help_(?:impact|urgency)|priority_i\d_u\d|default_tracker_mode)\z/.freeze
+  ALLOWED_SETTING_KEY_PATTERN = /\A(?:label_(?:impact|urgency)_\d|help_(?:impact|urgency)_[1-3]|priority_i\d_u\d|default_tracker_mode)\z/.freeze
 
   class << self
     attr_accessor :logging_enabled
@@ -189,6 +189,17 @@ module RedmineItilPriority
 
     settings = settings_for(project, tracker) || global
     [1, 2, 3].map { |i| [settings["label_#{type}_#{i}"], i.to_s] }
+  end
+
+  # The explanation per level of impact or urgency ('impact' / 'urgency'),
+  # {level => text} for the levels that have one.
+  def help_texts(settings, type)
+    return {} unless settings
+
+    (1..3).each_with_object({}) do |level, texts|
+      text = settings["help_#{type}_#{level}"]
+      texts[level] = text if text.present?
+    end
   end
 
   def urgency_options(project = nil, tracker = nil)

@@ -19,5 +19,5 @@ nl:
   field_itil_help_urgency: "Uitleg bij de urgentieniveaus"
   field_itil_help_impact: "Uitleg bij de impactniveaus"
   label_itil_help: "Uitleg bij de niveaus"
-  text_itil_help: "Getoond achter een info-icoon naast het veld op het issueformulier. Leeg laten voor geen icoon."
+  text_itil_help: "Eén uitleg per niveau. Op het issueformulier staat de uitleg van het gekozen niveau onder het veld, en het info-icoon toont alle drie. Leeg laten voor geen uitleg."
   text_itil_help_project: "Leeg: de tekst van de generieke instellingen."

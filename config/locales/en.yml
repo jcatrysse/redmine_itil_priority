@@ -19,5 +19,5 @@ en:
   field_itil_help_urgency: "Explanation of the urgency levels"
   field_itil_help_impact: "Explanation of the impact levels"
   label_itil_help: "Explanation of the levels"
-  text_itil_help: "Shown behind an info icon next to the field on the issue form. Leave empty for no icon."
+  text_itil_help: "One explanation per level. On the issue form the explanation of the chosen level shows below the field, and the info icon shows all three. Leave empty for none."
   text_itil_help_project: "Empty: the text of the generic settings."

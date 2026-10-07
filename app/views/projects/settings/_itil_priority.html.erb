@@ -51,12 +51,14 @@
       </table>
       <div class="itil-help-settings <%= 'itil-hidden' if mode == 'inactive' %>">
       <% %w[urgency impact].each do |field| %>
+        <% (1..3).each do |level| %>
         <p>
-          <label for="tracker_settings_<%= tracker.id %>_help_<%= field %>"><%= l(:"field_itil_help_#{field}") %></label>
-          <%= text_area_tag "tracker_settings[#{tracker.id}][help_#{field}]", t_settings["help_#{field}"],
-                            id: "tracker_settings_#{tracker.id}_help_#{field}", rows: 3, cols: 60, disabled: disabled,
-                            data: { default_value: default_settings["help_#{field}"].to_s } %>
+          <label for="tracker_settings_<%= tracker.id %>_help_<%= field %>_<%= level %>"><%= l(:"field_#{field}") %>: <%= t_settings["label_#{field}_#{level}"].presence || level %></label>
+          <%= text_area_tag "tracker_settings[#{tracker.id}][help_#{field}_#{level}]", t_settings["help_#{field}_#{level}"],
+                            id: "tracker_settings_#{tracker.id}_help_#{field}_#{level}", rows: 2, cols: 60, disabled: disabled,
+                            data: { default_value: default_settings["help_#{field}_#{level}"].to_s } %>
         </p>
+        <% end %>
       <% end %>
       <em class="info"><%= l(:text_itil_help_project) %></em>
       </div>

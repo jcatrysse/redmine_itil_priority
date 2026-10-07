@@ -19,5 +19,5 @@ it:
   field_itil_help_urgency: "Spiegazione dei livelli di urgenza"
   field_itil_help_impact: "Spiegazione dei livelli di impatto"
   label_itil_help: "Spiegazione dei livelli"
-  text_itil_help: "Mostrata dietro un'icona informativa accanto al campo nel modulo della segnalazione. Lasciare vuoto per nessuna icona."
+  text_itil_help: "Una spiegazione per livello. Nel modulo della segnalazione la spiegazione del livello scelto appare sotto il campo, e l'icona informativa mostra tutte e tre. Lasciare vuoto per nessuna spiegazione."
   text_itil_help_project: "Vuoto: il testo delle impostazioni generiche."

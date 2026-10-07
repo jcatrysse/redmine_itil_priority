@@ -19,5 +19,5 @@ pt:
   field_itil_help_urgency: "Explicação dos níveis de urgência"
   field_itil_help_impact: "Explicação dos níveis de impacto"
   label_itil_help: "Explicação dos níveis"
-  text_itil_help: "Mostrada atrás de um ícone de informação junto ao campo no formulário da tarefa. Deixar vazio para nenhum ícone."
+  text_itil_help: "Uma explicação por nível. No formulário da tarefa, a explicação do nível escolhido aparece por baixo do campo, e o ícone de informação mostra as três. Deixar vazio para nenhuma explicação."
   text_itil_help_project: "Vazio: o texto das configurações genéricas."

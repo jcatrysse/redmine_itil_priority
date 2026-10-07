@@ -2,6 +2,7 @@
 <% if settings %>
 <% can_override = @issue.safe_attribute?('priority_id') && @issue.safe_attribute?('itil_priority_linked') %>
 <% linked = @issue.itil_priority_active? %>
+<% help = %w[urgency impact].to_h { |field| [field, RedmineItilPriority.help_texts(settings, field)] } %>
 <style>
   .itil-priority { position:relative; display:inline-block; min-width:470px; min-height:50px;
                    background-color:#fffff3; padding:4px 6px; border:1px solid #eee; }
@@ -15,7 +16,11 @@
   #itil_priority_link.unlink .itil-unlinked { display:inline; }
   #itil_priority_link.readonly { cursor:default; }
   .itil-priority .itil-help-toggle { margin-left:2px; }
-  .itil-help { margin:0 0 6px 180px; padding:4px 8px; max-width:600px; background-color:#fffff3; border:1px solid #eee; }
+  .itil-help, .itil-help-current > div { margin:0 0 6px 180px; padding:4px 8px; max-width:600px; background-color:#fffff3; border:1px solid #eee; }
+  .itil-help-current > div { color:#555; }
+  .itil-help-current p, .itil-help-level p { margin:2px 0; }
+  .itil-help-level { padding:2px 4px; }
+  .itil-help-level.selected { background-color:#ffe9a8; }
 </style>
 <% (1..3).each do |i| %>
   <% (1..3).each do |u| %>
@@ -31,12 +36,8 @@
   <% [['urgency', RedmineItilPriority.urgency_options(@project, @issue.tracker)],
       ['impact', RedmineItilPriority.impact_options(@project, @issue.tracker)]].each_with_index do |(field, options), index| %>
     <%= tag.br if index > 0 %>
-    <label class=inline><%= l(:"field_#{field}") %><%= content_tag(:span, ' *', class: 'required') if @issue.required_attribute?("#{field}_id") %><% if settings["help_#{field}"].present? %>
-      <% if respond_to?(:sprite_icon) %>
-      <%= link_to sprite_icon('help'), '#', class: 'itil-help-toggle icon-only', title: l(:label_itil_help), data: { target: "itil_help_#{field}" } %>
-      <% else %>
-      <%= link_to l(:label_itil_help), '#', class: 'itil-help-toggle icon icon-only icon-help', title: l(:label_itil_help), data: { target: "itil_help_#{field}" } %>
-      <% end %><% end %></label>
+    <label class=inline><%= l(:"field_#{field}") %><%= content_tag(:span, ' *', class: 'required') if @issue.required_attribute?("#{field}_id") %><% if help[field].any? %>
+      <%= link_to sprite_icon('help'), '#', class: 'itil-help-toggle icon-only', title: l(:label_itil_help), data: { target: "itil_help_#{field}" } %><% end %></label>
     <% value = @issue.send("#{field}_id") %>
     <% if @issue.safe_attribute?("#{field}_id") %>
       <%= select_tag "issue[#{field}_id]", options_for_select([["", ""]] + options, value) %>
@@ -67,13 +68,20 @@
   </span>
 </p>
 <div id="itil_priority_help">
-<% %w[urgency impact].each do |field| %>
-  <% if settings["help_#{field}"].present? %>
-  <div id="itil_help_<%= field %>" class="itil-help wiki" style="display:none;">
-    <strong><%= l(:"field_#{field}") %></strong>
-    <%= textilizable settings["help_#{field}"], project: @project %>
+<% help.each do |field, texts| %>
+  <% next if texts.empty? %>
+  <% labels = RedmineItilPriority.options_for(field, @project, @issue.tracker).to_h { |label, level| [level, label] } %>
+  <div id="itil_help_current_<%= field %>" class="itil-help-current">
+    <% texts.each do |level, text| %>
+    <div class="wiki" data-level="<%= level %>" style="display:none;"><strong><%= labels[level.to_s] %></strong><%= textilizable text, project: @project %></div>
+    <% end %>
   </div>
-  <% end %>
+  <div id="itil_help_<%= field %>" class="itil-help" style="display:none;">
+    <strong><%= l(:"field_itil_help_#{field}") %></strong>
+    <% (1..3).each do |level| %>
+    <div class="itil-help-level wiki" data-level="<%= level %>"><strong><%= labels[level.to_s] %></strong><%= textilizable(texts[level], project: @project) if texts[level] %></div>
+    <% end %>
+  </div>
 <% end %>
 </div>
 <script>
@@ -113,6 +121,15 @@ $(function() {
     }
   }
 
+  // the explanation of the chosen level under the field, and marked in the overview
+  function showHelp() {
+    ['urgency', 'impact'].forEach(function(name) {
+      var level = itilValue(name)
+      $('#itil_help_current_' + name + ' > div').hide().filter('[data-level="' + level + '"]').show()
+      $('#itil_help_' + name + ' .itil-help-level').removeClass('selected').filter('[data-level="' + level + '"]').addClass('selected')
+    })
+  }
+
   function recalculateItilPriority(impact, urgency) {
     showPriority($("#priority_i" + impact + "_u" + urgency).text())
   }
@@ -145,7 +162,7 @@ $(function() {
     }
   }
 
-  $("select#issue_urgency_id, select#issue_impact_id").on("change", syncPriority)
+  $("select#issue_urgency_id, select#issue_impact_id").on("change", syncPriority).on("change", showHelp)
 
   if (canOverride) {
     $link.on('click', function() {
@@ -171,6 +188,7 @@ $(function() {
   }
 
   syncPriority()
+  showHelp()
 })
 </script>
 <% end %>

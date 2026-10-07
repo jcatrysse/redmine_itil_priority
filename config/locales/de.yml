@@ -19,5 +19,5 @@ de:
   field_itil_help_urgency: "Erläuterung der Dringlichkeitsstufen"
   field_itil_help_impact: "Erläuterung der Auswirkungsstufen"
   label_itil_help: "Erläuterung der Stufen"
-  text_itil_help: "Wird hinter einem Info-Symbol neben dem Feld im Ticketformular angezeigt. Leer lassen für kein Symbol."
+  text_itil_help: "Eine Erläuterung pro Stufe. Im Ticketformular steht die Erläuterung der gewählten Stufe unter dem Feld, und das Info-Symbol zeigt alle drei. Leer lassen für keine Erläuterung."
   text_itil_help_project: "Leer: der Text der generischen Einstellungen."

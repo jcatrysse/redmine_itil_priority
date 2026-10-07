@@ -2,7 +2,7 @@
 # the generic seed. Idempotent.
 #
 # - the matrix maps to the priorities by name (Low, Normal, High, Urgent, Immediate)
-# - a help text for impact (none for urgency: the icon must only show with a text)
+# - a help text per impact level (none for urgency: the icon must only show with a text)
 # - role "Reporter" plays the helpdesk role: it may edit issues but must not
 #   override the priority, so the "override ITIL priority" permission that
 #   migration 004 granted it on upgrade is taken away here, as the "After the
@@ -19,8 +19,9 @@ Setting.plugin_redmine_itil_priority = {
   'priority_i1_u1' => id['Low'],    'priority_i1_u2' => id['Low'],    'priority_i1_u3' => id['Normal'],
   'priority_i2_u1' => id['Low'],    'priority_i2_u2' => id['Normal'], 'priority_i2_u3' => id['High'],
   'priority_i3_u1' => id['Normal'], 'priority_i3_u2' => id['High'],   'priority_i3_u3' => id['Urgent'],
-  'help_impact' => "* *Low impact*: one user\n* *Medium impact*: a team\n* *Important impact*: the whole company",
-  'help_urgency' => ''
+  'help_impact_1' => 'One user is hindered.', 'help_impact_2' => 'A team is hindered.',
+  'help_impact_3' => 'The whole *company* is hindered.',
+  'help_urgency_1' => '', 'help_urgency_2' => '', 'help_urgency_3' => ''
 }
 
 reporter = Role.find_by(name: 'Reporter')

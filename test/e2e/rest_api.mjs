@@ -56,9 +56,9 @@ r = await call('reporter', 'GET', `/projects/${P}/itil_priority/api/settings.jso
 if (r.status !== 403) fail(`project settings as reporter: HTTP ${r.status}, expected 403`);
 r = await call('outsider', 'GET', '/projects/e2e-private/itil_priority/api/settings.json');
 if (r.status !== 403 && r.status !== 404) fail(`private project settings as outsider: HTTP ${r.status}, expected 403/404`);
-r = await call('admin', 'PUT', '/itil_priority/api/settings.json', { settings: { help_urgency: 'API urgency text', evil_key: 'x' } });
-if (r.status !== 200 || r.json?.help_urgency !== 'API urgency text' || 'evil_key' in (r.json || {})) fail('global settings PUT: help text not stored or unknown key accepted');
-await call('admin', 'PUT', '/itil_priority/api/settings.json', { settings: { help_urgency: '' } });   // back to the seed
+r = await call('admin', 'PUT', '/itil_priority/api/settings.json', { settings: { help_urgency_2: 'API urgency text', evil_key: 'x' } });
+if (r.status !== 200 || r.json?.help_urgency_2 !== 'API urgency text' || 'evil_key' in (r.json || {})) fail('global settings PUT: help text not stored or unknown key accepted');
+await call('admin', 'PUT', '/itil_priority/api/settings.json', { settings: { help_urgency_2: '' } });   // back to the seed
 
 // evidence page: the API answers rendered as text
 await t.login('manager');

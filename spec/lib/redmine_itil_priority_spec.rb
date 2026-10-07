@@ -238,8 +238,15 @@ RSpec.describe RedmineItilPriority do
   end
 
 
-  it 'keeps the help texts in the filtered settings and drops unknown keys' do
-    filtered = described_class.filter_settings('help_impact' => 'x', 'help_urgency' => 'y', 'help_other' => 'z')
-    expect(filtered).to eq('help_impact' => 'x', 'help_urgency' => 'y')
+  it 'keeps one help text per level in the filtered settings and drops unknown keys' do
+    filtered = described_class.filter_settings('help_impact_1' => 'x', 'help_urgency_3' => 'y',
+                                               'help_impact' => 'old', 'help_impact_4' => 'no', 'help_other_1' => 'z')
+    expect(filtered).to eq('help_impact_1' => 'x', 'help_urgency_3' => 'y')
+  end
+
+  it 'returns the help texts per level, without the empty ones' do
+    settings = { 'help_impact_1' => 'one user', 'help_impact_2' => '', 'help_impact_3' => 'everyone', 'help_urgency_1' => 'x' }
+    expect(described_class.help_texts(settings, 'impact')).to eq(1 => 'one user', 3 => 'everyone')
+    expect(described_class.help_texts(nil, 'impact')).to eq({})
   end
 end

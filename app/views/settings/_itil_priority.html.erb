@@ -36,10 +36,15 @@
     </tr>
   </table>
   <% %w[urgency impact].each do |field| %>
-  <p>
-    <label for="settings_help_<%= field %>"><%= l(:"field_itil_help_#{field}") %></label>
-    <%= text_area_tag "settings[help_#{field}]", settings["help_#{field}"], rows: 4, cols: 60, class: 'wiki-edit' %>
-    <em class="info"><%= l(:text_itil_help) %></em>
-  </p>
+  <fieldset class="itil-help-settings">
+    <legend><%= l(:"field_itil_help_#{field}") %></legend>
+    <% (1..3).each do |level| %>
+    <p>
+      <label for="settings_help_<%= field %>_<%= level %>"><%= settings["label_#{field}_#{level}"].presence || level %></label>
+      <%= text_area_tag "settings[help_#{field}_#{level}]", settings["help_#{field}_#{level}"], rows: 2, cols: 60, class: 'wiki-edit' %>
+    </p>
+    <% end %>
+  </fieldset>
   <% end %>
+  <em class="info"><%= l(:text_itil_help) %></em>
 </fieldset>

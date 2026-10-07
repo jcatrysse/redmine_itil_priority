@@ -89,13 +89,25 @@ t.check('relink');
 if (await text('.issue .attributes .priority .value') !== 'Normal') fail('relink: priority is not Normal');
 await t.shot('relinked', 'Operator links again: the priority is recalculated (Important x Not urgent = Normal)');
 
-// --- info icon: impact has a text, urgency none
+// --- explanation per level (Jan, 2026-10-07): the chosen level under the field, all three behind the icon
 await t.go(`/issues/${id}/edit`);
 if (await t.page.locator('a.itil-help-toggle[data-target=itil_help_urgency]').count()) fail('help: urgency has an icon without text');
-if (await t.page.isVisible('#itil_help_impact')) fail('help: text visible before the click');
+if (!/whole company/.test(await t.page.locator('#itil_help_current_impact').innerText())) fail('help: text of the chosen level (Important impact) not shown under the field');
+await t.page.selectOption('select#issue_impact_id', '1');
+if (!/One user/.test(await t.page.locator('#itil_help_current_impact').innerText())) fail('help: text did not follow the chosen level');
+await t.shot('help-current', 'Explanation of the chosen impact level under the field; it follows the selection (Low impact: one user)', { full: false });
+if (await t.page.isVisible('#itil_help_impact')) fail('help: overview visible before the click');
 await t.page.click('a.itil-help-toggle[data-target=itil_help_impact]');
-if (!(await t.page.isVisible('#itil_help_impact'))) fail('help: the click did not show the text');
-await t.shot('help-impact', 'Info icon next to Impact (none next to Urgency, it has no text): a click shows the explanation of the levels', { full: false });
+if (!(await t.page.isVisible('#itil_help_impact'))) fail('help: the click did not show the overview');
+if ((await t.page.locator('#itil_help_impact .itil-help-level.selected').getAttribute('data-level')) !== '1') fail('help: chosen level not marked in the overview');
+await t.shot('help-impact', 'Info icon next to Impact (none next to Urgency, it has no text): all three levels with their explanation, the chosen one marked', { full: false });
+
+// the same for a helpdesk user, and the explanation of a read-only level
+await t.login('reporter');
+await t.go(`/issues/${id}/edit`);
+if (!/whole company/.test(await t.page.locator('#itil_help_current_impact').innerText())) fail('helpdesk: level explanation missing');
+await t.shot('help-helpdesk', 'A helpdesk user sees the same explanation for the impact level');
+await t.login('manager');
 
 // --- outsider: the private project stays invisible
 await t.login('outsider');

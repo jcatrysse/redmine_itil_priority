@@ -19,5 +19,5 @@ fr:
   field_itil_help_urgency: "Explication des niveaux d'urgence"
   field_itil_help_impact: "Explication des niveaux d'impact"
   label_itil_help: "Explication des niveaux"
-  text_itil_help: "Affichée derrière une icône d'information à côté du champ dans le formulaire de la demande. Laisser vide pour aucune icône."
+  text_itil_help: "Une explication par niveau. Dans le formulaire de la demande, l'explication du niveau choisi s'affiche sous le champ, et l'icône d'information affiche les trois. Laisser vide pour aucune explication."
   text_itil_help_project: "Vide : le texte des paramètres génériques."

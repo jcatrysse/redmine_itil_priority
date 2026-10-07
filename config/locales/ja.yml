@@ -19,5 +19,5 @@ ja:
   field_itil_help_urgency: "緊急度レベルの説明"
   field_itil_help_impact: "影響レベルの説明"
   label_itil_help: "レベルの説明"
-  text_itil_help: "チケットフォームの項目の横にある情報アイコンの後ろに表示されます。空にするとアイコンは表示されません。"
+  text_itil_help: "レベルごとに1つの説明。チケットフォームでは選択したレベルの説明が項目の下に表示され、情報アイコンで3つすべてが表示されます。空にすると説明は表示されません。"
   text_itil_help_project: "空の場合: 一般設定のテキスト。"
