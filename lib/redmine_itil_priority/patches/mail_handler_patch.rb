@@ -6,19 +6,16 @@ require 'active_support/concern'
 module RedmineItilPriority
   module Patches
     # Patch MailHandler to parse Impact and Urgency from emails.
+    # Prepended, never alias_method (see ProjectsHelperPatch).
     module MailHandlerPatch
-      RedmineItilPriority.log('[ITIL] MailHandlerPatch included')
-      extend ActiveSupport::Concern
+      RedmineItilPriority.log('[ITIL] MailHandlerPatch prepended')
 
-      included do
-        alias_method :issue_attributes_from_keywords_without_itil_priority, :issue_attributes_from_keywords
-        alias_method :issue_attributes_from_keywords, :issue_attributes_from_keywords_with_itil_priority
-      end
+      private
 
       # Returns a Hash of issue attributes extracted from keywords in the email body.
       # Adds support for Impact, Urgency and the linking flag.
-      def issue_attributes_from_keywords_with_itil_priority(issue)
-        attrs = issue_attributes_from_keywords_without_itil_priority(issue)
+      def issue_attributes_from_keywords(issue)
+        attrs = super
         project = issue.project
         tracker_id = attrs['tracker_id'] || issue.tracker_id || issue.tracker&.id
         tracker = nil

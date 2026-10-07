@@ -84,7 +84,7 @@ RSpec.describe RedmineItilPriority::Patches::IssueQueryPatch do
       end
     end
 
-    IssueQuery.include RedmineItilPriority::Patches::IssueQueryPatch
+    IssueQuery.prepend RedmineItilPriority::Patches::IssueQueryPatch
   end
 
   after do

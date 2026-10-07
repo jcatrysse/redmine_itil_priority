@@ -49,7 +49,7 @@ RSpec.describe RedmineItilPriority::Patches::MailHandlerPatch do
   end
 
   before do
-    handler_class.include described_class
+    handler_class.prepend described_class
   end
 
   it 'extracts impact and urgency ids from keywords' do
@@ -57,7 +57,7 @@ RSpec.describe RedmineItilPriority::Patches::MailHandlerPatch do
     handler.keywords[:impact] = 'Low impact'
     handler.keywords[:urgency] = 'Urgent'
     handler.keywords[:itil_priority_linked] = '0'
-    attrs = handler.issue_attributes_from_keywords(issue)
+    attrs = handler.send(:issue_attributes_from_keywords, issue)
     expect(attrs['impact_id']).to eq('1')
     expect(attrs['urgency_id']).to eq('3')
     expect(attrs['itil_priority_linked']).to eq('0')
@@ -68,7 +68,7 @@ RSpec.describe RedmineItilPriority::Patches::MailHandlerPatch do
     handler.base_attrs = {}
     handler.keywords[:impact] = 'Low impact'
     handler.keywords[:urgency] = 'Urgent'
-    attrs = handler.issue_attributes_from_keywords(double(project: project, tracker_id: nil, tracker: nil))
+    attrs = handler.send(:issue_attributes_from_keywords, double(project: project, tracker_id: nil, tracker: nil))
     expect(attrs['impact_id']).to eq('1')
     expect(attrs['urgency_id']).to eq('3')
   end

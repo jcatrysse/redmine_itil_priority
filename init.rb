@@ -40,9 +40,9 @@ Redmine::Plugin.register :redmine_itil_priority do
 end
 
 Issue.include RedmineItilPriority::Patches::IssuePatch
-IssueQuery.include RedmineItilPriority::Patches::IssueQueryPatch
-ProjectsHelper.include RedmineItilPriority::Patches::ProjectsHelperPatch
+IssueQuery.prepend RedmineItilPriority::Patches::IssueQueryPatch
+ProjectsHelper.prepend RedmineItilPriority::Patches::ProjectsHelperPatch
 Setting.include RedmineItilPriority::Patches::SettingPatch
-MailHandler.include RedmineItilPriority::Patches::MailHandlerPatch
+MailHandler.prepend RedmineItilPriority::Patches::MailHandlerPatch
 WorkflowPermission.prepend RedmineItilPriority::Patches::WorkflowPatch::WorkflowPermissionPatch
 WorkflowsController.prepend RedmineItilPriority::Patches::WorkflowPatch::WorkflowsControllerPatch

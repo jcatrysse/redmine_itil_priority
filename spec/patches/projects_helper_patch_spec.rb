@@ -15,7 +15,7 @@ RSpec.describe RedmineItilPriority::Patches::ProjectsHelperPatch do
         [{ name: 'general' }]
       end
 
-      include RedmineItilPriority::Patches::ProjectsHelperPatch
+      prepend RedmineItilPriority::Patches::ProjectsHelperPatch
     end
   end
 
