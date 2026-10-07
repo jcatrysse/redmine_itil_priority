@@ -2,11 +2,14 @@
 
 module RedmineItilPriority
   module Patches
-    # Prepended, never alias_method: several GEOxyz plugins prepend on
-    # project_settings_tabs, and an alias chain on a prepended method recurses
-    # (Project > Settings answered HTTP 500 with all plugins installed).
+    # Added to ProjectsController's helpers (init.rb), above ProjectsHelper and
+    # outside it: never alias_method (an alias chain mixed with other plugins'
+    # prepends recurses), and not prepended to ProjectsHelper either (a plugin
+    # that alias-chains the method afterwards copies the prepended method, whose
+    # super then finds nothing). Either way Project > Settings answered HTTP 500
+    # with all GEOxyz plugins installed.
     module ProjectsHelperPatch
-      RedmineItilPriority.log('[ITIL] ProjectsHelperPatch prepended')
+      RedmineItilPriority.log('[ITIL] ProjectsHelperPatch added to ProjectsController helpers')
 
       # Redmine calls this to build tabs on /projects/:id/settings
       def project_settings_tabs

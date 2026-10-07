@@ -41,7 +41,10 @@ end
 
 Issue.include RedmineItilPriority::Patches::IssuePatch
 IssueQuery.prepend RedmineItilPriority::Patches::IssueQueryPatch
-ProjectsHelper.prepend RedmineItilPriority::Patches::ProjectsHelperPatch
+# On the controller's helper chain, not on ProjectsHelper: a plugin that alias-chains
+# ProjectsHelper#project_settings_tabs after this one (redmine_mail_digest) would copy a
+# prepended method and leave its super without a target (Project > Settings: HTTP 500).
+ProjectsController.helper RedmineItilPriority::Patches::ProjectsHelperPatch
 Setting.include RedmineItilPriority::Patches::SettingPatch
 MailHandler.prepend RedmineItilPriority::Patches::MailHandlerPatch
 WorkflowPermission.prepend RedmineItilPriority::Patches::WorkflowPatch::WorkflowPermissionPatch
