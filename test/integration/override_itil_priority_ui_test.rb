@@ -25,6 +25,16 @@ class ItilOverridePriorityUiTest < Redmine::IntegrationTest
     assert_select '#itil_priority_field[data-can-override=false]'
   end
 
+  # The matrix may still point at a priority that was deactivated later; the
+  # live display must know its name (OpenAI review of ebce172).
+  def test_form_knows_the_names_of_inactive_priorities
+    IssuePriority.find(6).update_columns(active: false)
+    log_user('dlopper', 'foo')
+    get '/issues/1/edit'
+    assert_response :success
+    assert_match(/var priorityNames = \{[^}]*"6":"High"/, response.body)
+  end
+
   def test_form_with_the_permission_can_unlink
     log_user('jsmith', 'jsmith')
     get '/issues/1/edit'

@@ -158,7 +158,7 @@ PostgreSQL 16 only (Jan, 2026-10-07). Redmine 7.0-stable-GEOxyz.
 
 | | this plugin alone | with 40 other GEOxyz plugins |
 |---|---|---|
-| minitest | 64 runs, 313 assertions, 0 failures | 63 runs, 310 assertions, 0 failures (before the last added test) |
+| minitest | 73 runs, 333 assertions, 0 failures, 2 skips (the real-helpdesk tests, helpdesk not installed) | 72 runs, 331 assertions, 0 failures, 0 skips (helpdesk installed; before the last added test) |
 | rspec | 60 examples, 0 failures | 60 examples, 0 failures |
 | e2e | smoke 13, core 6, 7 scenarios, 59 screenshots, 0 problems (`docs/e2e/`) | all 42 except redmine_issue_field_visibility: 61 screenshots; 0 problems except Project > Settings 500 from redmine_depending_custom_fields (`docs/e2e/all-plugins/`); without that plugin too: smoke and settings 0 problems, Project > Settings 200 (`docs/e2e/all-plugins/without-dcf/`) |
 
@@ -189,7 +189,7 @@ Combined run: redmine70-migration branches of redmine_issue_field_visibility, re
   - range 51cd4c0..fae24d3 (after the docs): 3 major, 1 minor (`docs/reviews/openai-2026-10-06-fae24d3.md`, each with a Resolution line). Accepted and fixed: impact, urgency and the link were assignable through the API or a mixed bulk edit where ITIL is inactive (pre-existing), now dropped from the safe attributes there, with tests. Not needed: the context-menu finding (the hook already renders only when every selected issue has ITIL active). Not changed: the kit's CI workflow uploads redmine/log, which only holds throwaway test credentials; a point for the migration kit.
   - range 51cd4c0..b973017 (after the fix): the same minor CI-log point again, and one "major" on test/unit/settings_cache_test.rb that is a false positive (Redmine's Setting writes its YAML itself, no AR serialize; the test passes on both databases). Nothing new accepted, so the review loop stops here (`docs/reviews/openai-2026-10-06-b973017.md`).
 
-- OpenAI review after Jan's decisions, two runs: 6d37772: two findings in tests (a test left a prepended module active for later tests; webhook scenario without a non-loopback address), both fixed in 3281330. 3281330: one claimed order dependence of impact/urgency on an inactive tracker, disproved with a test (core assigns tracker_id before filtering unsafe attributes), and the known CI-log point for the kit. Nothing new accepted. `docs/reviews/openai-2026-10-07-*.md`.
+- OpenAI review after Jan's decisions, two runs: 6d37772: two findings in tests (a test left a prepended module active for later tests; webhook scenario without a non-loopback address), both fixed in 3281330. 3281330: one claimed order dependence of impact/urgency on an inactive tracker, disproved with a test (core assigns tracker_id before filtering unsafe attributes), and the known CI-log point for the kit. Nothing new accepted. After round 2 (ebce172): one accepted finding, the live priority display went blank for a priority deactivated after it was put in the matrix; fixed with a test. `docs/reviews/openai-2026-10-07-*.md`.
 
 ## Decided by Jan
 

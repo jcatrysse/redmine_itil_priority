@@ -105,7 +105,8 @@ $(function() {
   var linked = canOverride ? $('#itil_priority_linked').val() !== '0' : $field.data('linked') === true
   var defaultPriority = String($field.data('default-priority'))
   var currentPriority = String($field.data('current-priority'))
-  var priorityNames = <%= raw json_escape(IssuePriority.active.map { |p| [p.id.to_s, p.name] }.to_h.to_json) %>
+  // all priorities, inactive ones too: the matrix may still point at one
+  var priorityNames = <%= raw json_escape(IssuePriority.all.map { |p| [p.id.to_s, p.name] }.to_h.to_json) %>
 
   function itilValue(name) {
     var $el = $("#issue_" + name + "_id")
@@ -113,12 +114,9 @@ $(function() {
   }
 
   function showPriority(priority_id) {
-    if (canOverride) {
-      $select.val(priority_id)
-      $("#real-priority-display").text($select.find("option:selected").text())
-    } else {
-      $("#real-priority-display").text(priorityNames[priority_id] || '')
-    }
+    if (canOverride) { $select.val(priority_id) }
+    // an unknown id keeps the text shown, rather than blanking it
+    if (priorityNames[priority_id]) { $("#real-priority-display").text(priorityNames[priority_id]) }
   }
 
   // the explanation of the chosen level under the field, and marked in the overview
