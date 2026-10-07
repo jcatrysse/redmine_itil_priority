@@ -41,8 +41,13 @@ class ItilWorkflowFieldsTest < Redmine::IntegrationTest
   # What redmine_project_workflows does: its own WorkflowsController#permissions,
   # prepended after this plugin's patch, that builds @fields without super.
   # Core's list, rebuilt the way core does it.
+  # Ruby cannot undo a prepend, so the module stays but only acts while a test
+  # sets the flag; other tests keep core's action.
   module OtherPluginPermissions
+    mattr_accessor :active, default: false
+
     def permissions
+      return super unless OtherPluginPermissions.active
       return unless @roles.present? && @trackers.present?
 
       @fields = (Tracker::CORE_FIELDS_ALL - @trackers.map(&:disabled_core_fields).reduce(:&)).map do |field|
@@ -56,11 +61,14 @@ class ItilWorkflowFieldsTest < Redmine::IntegrationTest
 
   def test_impact_and_urgency_stay_listed_when_another_plugin_replaces_the_action
     WorkflowsController.prepend(OtherPluginPermissions) unless WorkflowsController <= OtherPluginPermissions
+    OtherPluginPermissions.active = true
     log_user('admin', 'admin')
     get '/workflows/permissions', params: { role_id: 2, tracker_id: 1 }
     assert_response :success
     assert_select 'td.name', text: /Impact/
     assert_select 'td.name', text: /Urgency/, count: 1
+  ensure
+    OtherPluginPermissions.active = false
   end
 
   def test_read_only_urgency_cannot_be_changed_and_shows_as_text

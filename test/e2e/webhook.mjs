@@ -16,7 +16,13 @@ const server = http.createServer((req, res) => {
 });
 await new Promise((r) => server.listen(0, '0.0.0.0', r));
 const port = server.address().port;
-const host = Object.values(os.networkInterfaces()).flat().find((i) => i.family === 'IPv4' && !i.internal).address;
+const host = Object.values(os.networkInterfaces()).flat().find((i) => i.family === 'IPv4' && !i.internal)?.address;
+if (!host) {
+  console.log('webhook: this host has no non-loopback IPv4 address, and Redmine refuses loopback webhook targets; skipped');
+  server.close();
+  await t.done();
+  process.exit(0);
+}
 
 await t.login('manager');
 if ((await t.page.request.get(`${t.BASE}/webhooks/new`)).status() === 404) {
