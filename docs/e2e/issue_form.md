@@ -1,6 +1,6 @@
 # issue_form
 
-Run 2026-10-06T20:45:22.409Z against http://127.0.0.1:3000.
+Run 2026-10-07T16:13:12.689Z against http://127.0.0.1:3000.
 
 | screenshot | user | URL | shows |
 |---|---|---|---|
@@ -14,5 +14,7 @@ Run 2026-10-06T20:45:22.409Z against http://127.0.0.1:3000.
 | ![](issue_form-helpdesk-new.png) | reporter | `/projects/e2e-project/issues/new` | Helpdesk user, new issue: the ITIL field takes the priority's place after Status; Medium x Urgent gives High |
 | ![](issue_form-helpdesk-created.png) | reporter | `/issues/9` | Created by the helpdesk user with priority High from the matrix |
 | ![](issue_form-relinked.png) | manager | `/issues/8` | Operator links again: the priority is recalculated (Important x Not urgent = Normal) |
-| ![](issue_form-help-impact.png) | manager | `/issues/8/edit` | Info icon next to Impact (none next to Urgency, it has no text): a click shows the explanation of the levels |
+| ![](issue_form-help-current.png) | manager | `/issues/8/edit` | Explanation of the chosen impact level under the field; it follows the selection (Low impact: one user) |
+| ![](issue_form-help-impact.png) | manager | `/issues/8/edit` | Info icon next to Impact (none next to Urgency, it has no text): all three levels with their explanation, the chosen one marked |
+| ![](issue_form-help-helpdesk.png) | reporter | `/issues/8/edit` | A helpdesk user sees the same explanation for the impact level |
 | ![](issue_form-outsider-refused.png) | outsider | `/projects/e2e-private/issues/new` | A non-member cannot open the issue form of the private project |

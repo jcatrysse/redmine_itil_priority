@@ -1,6 +1,6 @@
 # smoke
 
-Run 2026-10-06T20:44:54.860Z against http://127.0.0.1:3000.
+Run 2026-10-07T16:12:42.951Z against http://127.0.0.1:3000.
 
 | screenshot | user | URL | shows |
 |---|---|---|---|
@@ -15,6 +15,5 @@ Run 2026-10-06T20:44:54.860Z against http://127.0.0.1:3000.
 | ![](smoke-09.png) | admin | `/admin` | /admin (HTTP 200) |
 | ![](smoke-10.png) | admin | `/admin/plugins` | /admin/plugins (HTTP 200) |
 | ![](smoke-11.png) | admin | `/settings/plugin/redmine_itil_priority` | /settings/plugin/redmine_itil_priority (HTTP 200) |
-| ![](smoke-12.png) | admin | `/workflows/permissions` | /workflows/permissions (HTTP 200) |
-| ![](smoke-13.png) | admin | `/itil_priority/api/settings` | /itil_priority/api/settings (HTTP 200) |
-| ![](smoke-14.png) | admin | `/projects/1/itil_priority/api/settings` | /projects/1/itil_priority/api/settings (HTTP 200) |
+| ![](smoke-12.png) | admin | `/itil_priority/api/settings` | /itil_priority/api/settings (HTTP 200) |
+| ![](smoke-13.png) | admin | `/projects/1/itil_priority/api/settings` | /projects/1/itil_priority/api/settings (HTTP 200) |

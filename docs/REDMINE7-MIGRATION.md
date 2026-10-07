@@ -85,6 +85,15 @@ In this order: things that break, security, the GEOxyz changes, the open items, 
 13. Info icon unclickable behind the priority block (found by the e2e run, 7c98816); invisible on Redmine 5.1 (064b479).
 14. Impact, urgency and the link were assignable through the REST API (or a bulk edit over mixed trackers) where ITIL is inactive; now not (OpenAI review finding).
 
+**Decisions of 2026-10-07 and the run with all GEOxyz plugins**
+
+19. alias_method replaced by prepend (Jan's general decision): IssueQuery#initialize_available_filters and #available_columns, MailHandler#issue_attributes_from_keywords (0aa2d54).
+20. Project > Settings HTTP 500 with all plugins: prepending to ProjectsHelper was not enough, because redmine_mail_digest (loads later) alias-chains project_settings_tabs and copies a prepended method, whose super then has no target. The tab patch now sits on ProjectsController's helpers (26bafae), as redmine_ai_triage does.
+21. Impact and Urgency missing from Workflow > Fields permissions with redmine_project_workflows: that plugin replaces WorkflowsController#permissions without super and loads later. Fixed here: the rows are added at render time (6ee3baf). **Still open in redmine_project_workflows**: its PermissionWriter whitelists only core field names (`Tracker::CORE_FIELDS_ALL` + custom fields), so with it installed a saved Impact/Urgency rule is dropped. That plugin must accept the field names WorkflowPermission accepts (e.g. by validating through WorkflowPermission).
+22. Explanation per level (Jan's choice B), 1aa2729.
+
+Recursions found with all GEOxyz plugins that are **not in this plugin** (alias chain mixed with prepends, each plugin's own session fixes it): redmine_extended_api `Issue#safe_attributes=` (fixed in that branch during this session), redmine_tint_issues `Issue#css_classes` (fixed during this session), redmine_issue_field_visibility `IssueQuery#initialize_available_filters` with redmine_agile (still open at the time of the run: stack overflow already in `rake redmine:load_default_data`, so it was left out of the combined run).
+
 **Left (not done, with reason)**
 
 15. The issue page (show) does not display impact and urgency, only the form does. Not asked; would be a small `view_issues_show_details_bottom` hook. Recommendation: add it in a follow-up if helpdesk users need to see them without opening the form.
@@ -158,16 +167,20 @@ Combined run: redmine70-migration branches of redmine_issue_field_visibility, re
   - range 51cd4c0..fae24d3 (after the docs): 3 major, 1 minor (`docs/reviews/openai-2026-10-06-fae24d3.md`, each with a Resolution line). Accepted and fixed: impact, urgency and the link were assignable through the API or a mixed bulk edit where ITIL is inactive (pre-existing), now dropped from the safe attributes there, with tests. Not needed: the context-menu finding (the hook already renders only when every selected issue has ITIL active). Not changed: the kit's CI workflow uploads redmine/log, which only holds throwaway test credentials; a point for the migration kit.
   - range 51cd4c0..b973017 (after the fix): the same minor CI-log point again, and one "major" on test/unit/settings_cache_test.rb that is a false positive (Redmine's Setting writes its YAML itself, no AR serialize; the test passes on both databases). Nothing new accepted, so the review loop stops here (`docs/reviews/openai-2026-10-06-b973017.md`).
 
-## Open questions for Jan
+## Decided by Jan
 
-Built as recommended; change it if you decide otherwise.
+All questions are answered; the record of 2026-10-07 is `docs/DECISIONS-2026-10-07.md` (from Jan's coordinating session).
 
 1. **[Decided by Jan 2026-10-06: OK, as built]** **Migration 004 grants "Override ITIL priority" to every role that can add or edit issues.** Options: (a) grant on upgrade, remove from helpdesk roles afterwards (built: nobody loses anything on upgrade); (b) grant nothing, add it to the operator roles by hand (helpdesk users lose the priority at once, operators too until someone ticks it). Recommendation: (a).
 2. **[Decided by Jan 2026-10-06: OK, as built]** **The link is stored in a new column `issues.itil_priority_linked`** (schema change not required by Redmine 7). Without it an operator's priority is undone by the next edit, so the change request cannot hold. Alternative: derive "unlinked" from "priority differs from the matrix" (no column, but every matrix change would mark old issues unlinked). Recommendation: keep the column.
-3. **A priority set directly on a linked issue (context menu, bulk edit, API) unlinks the issue.** The plugin's own code meant to map the priority back to impact and urgency instead, but that code never ran in Redmine (core's setter shadows it), and mapping back is ambiguous when several cells share a priority. Recommendation: keep unlinking.
+3. **[Decided by Jan 2026-10-07: A, "Ontkoppelen, de gekozen prioriteit blijft (zo gebouwd)" (Zelfde resultaat als het link-icoon in het formulier; impact en urgentie blijven ongewijzigd.)]** Already built (211335d), kept. **A priority set directly on a linked issue (context menu, bulk edit, API) unlinks the issue.** The plugin's own code meant to map the priority back to impact and urgency instead, but that code never ran in Redmine (core's setter shadows it), and mapping back is ambiguous when several cells share a priority. Recommendation: keep unlinking.
 4. **[Decided by Jan 2026-10-06: yes, as built]** **A helpdesk user who changes urgency on an issue an operator unlinked keeps the operator's priority** (impact/urgency are stored, the priority stays). Alternative: helpdesk changes recalculate and drop the operator's priority. Recommendation: keep it as built; the operator decided.
-5. **Help texts**: one text per field (impact, urgency) explaining all three levels, not one text per level. Recommendation: keep; per level would be six fields (3 impact + 3 urgency) per tracker and per instance. Jan asked for clarification (2026-10-06), open.
-6. Not tested, out of reach here: the RedmineUP helpdesk plugin (redmine_contacts_helpdesk), which creates issues through its own mail handler. If it assigns `priority_id` directly instead of through `safe_attributes=`, the permission does not apply to it. Check on staging with that plugin.
+5. **[Decided by Jan 2026-10-07: B, "Een aparte tekst per niveau" (Preciezer, de uitleg kan bij het gekozen niveau verschijnen, maar zes velden per instantie en per tracker om te beheren.)]** Built in 1aa2729: six texts (help_impact_1..3, help_urgency_1..3) per instance and per tracker in Custom mode; the chosen level's text shows under the field, the info icon shows all three. Was: one text per field.
+6. RedmineUP helpdesk (redmine_contacts_helpdesk, redmine70-migration branch, read 2026-10-07; not run against a mailbox here):
+   - New tickets from mail are created through `issue.safe_attributes=` (helpdesk_mail_recipient/issue_recipient.rb), including the helpdesk's configured default priority (`helpdesk_issue_priority`). So the permission does apply: when the account the mail is processed as lacks "Override ITIL priority", that configured default priority is dropped and the issue gets Redmine's default priority. The helpdesk does not read the Impact/Urgency keywords, so such issues start without impact and urgency. **For Jan**: decide whether helpdesk tickets should keep the configured priority (then give that account the permission) or start from the default and be classified by impact and urgency afterwards.
+   - The helpdesk mail-rule action "Issue priority" writes `priority_id` directly (`update_column` on existing issues): it bypasses the permission (an admin-configured rule, acceptable) but does not unlink the issue, so the next edit through the form recalculates it from the matrix. Left as is; a fix belongs in that plugin or in a rule that also sets impact and urgency.
+
+General decisions by Jan (2026-10-07), applied to this plan: GEOxyz goes straight to Redmine 7 (no 5.1 compatibility, no backports; `redmine70-migration` goes live), PostgreSQL 16 only (MariaDB runs no longer required), deface without a version constraint (not used by this plugin), core methods that other plugins patch too are patched with prepend (done, see work list 19 to 21), GitHub Actions manual only (unchanged).
 
 ## How to test
 
@@ -200,7 +213,7 @@ results quoted in the analysis come from it.
 1. **Start**: `git fetch && git checkout redmine70-migration && git pull`. Read this whole file,
    including the analysis report at the bottom. Do not reopen decisions recorded here.
 2. **Baseline, before you change anything**:
-   - the plugin's tests on Redmine 7.0-stable-GEOxyz with PostgreSQL and with MariaDB;
+   - the plugin's tests on Redmine 7.0-stable-GEOxyz with PostgreSQL;
    - a real running Redmine with this plugin (`./.codex/start_server.sh`) and the browser run
      (`./.codex/e2e.sh`: smoke over every page the plugin adds, plus the core issue flows).
    Write the numbers here. Something already broken now is a finding, not your regression.
@@ -212,9 +225,9 @@ results quoted in the analysis come from it.
 4. **GEOxyz changes**: go through the table above, one item at a time. Each kept or re-made change
    is its own commit with a test that proves it. Record the verdict in the table.
 5. **Work list**: then the numbered list, in order. One concern per commit.
-6. **Portability**: everything must run on Redmine's supported databases (PostgreSQL,
-   MySQL/MariaDB; SQLite where the plugin already supports it). Migrations must be reversible and
-   are run down and up on PostgreSQL and MariaDB.
+6. **Database** (Jan, 2026-10-07): GEOxyz runs PostgreSQL 16 only. Tests and e2e run on
+   PostgreSQL; keep SQL portable where that costs nothing, a MariaDB-only problem is a note, not a
+   blocker. Migrations must be reversible and are run down and up on PostgreSQL.
 7. **Together**: run with the other GEOxyz plugins installed (the migration kit's harness, or
    `RMP_EXTRA_PLUGINS`). A failure that only appears in combination is a finding to record here.
 8. **End to end, visually, every function**: on the real Redmine from `start_server.sh`
@@ -233,7 +246,6 @@ results quoted in the analysis come from it.
      reads them; API through `t.page.request`) and record command and result.
    - Before pictures where behaviour or layout changes: the branch GEOxyz runs today, on
      Redmine 5.1, same scenarios, `RMP_E2E_OUT=docs/e2e/before`.
-   - Run the whole e2e set once on MariaDB as well (`RMP_DB=mariadb`, then `start_server.sh --reset`).
 9. **Independent review**: first your own, adversarial: re-read the whole diff as if someone
    else wrote it and you are paid to reject it. Then, **when `OPENAI_API_KEY` is set in the
    session**, `./.codex/openai_review.sh`: it sends the diff of this branch to an OpenAI model
@@ -278,8 +290,10 @@ results quoted in the analysis come from it.
   (on by default: `t.sudo()` in a scenario). The breaker list is in the migration kit's CHECKLIST.md.
 - **Locales**: keep the locales the plugin ships in sync; translate a new key by matching the
   closest existing key in the same file, not from scratch; do not add new languages.
-- **5.1 compatibility**: prefer fixes that also run on Redmine 5.1 so they can be merged early;
-  say so when a fix cannot.
+- **Redmine 7 only** (Jan, 2026-10-07): GEOxyz goes straight to Redmine 7; no 5.1 compatibility,
+  no backports, no code paths that exist only for 5.1. `redmine70-migration` is what goes live.
+- **Patching core**: a core method that other installed plugins also patch is patched with
+  `prepend` (or, for helpers, on the controller's helper chain), never with `alias_method`.
 - **Git**: work on `redmine70-migration` only; never push to the default branch; never force-push
   a branch someone else uses. Descriptive commit messages (what and why). Push after every
   commit, together with the updated status in this file: a cloud session can stop at a usage
@@ -290,7 +304,7 @@ results quoted in the analysis come from it.
 ## Definition of done
 
 - All items of the work list are done or explicitly deferred with a reason, in this file.
-- The plugin's tests are green on Redmine 7.0-stable-GEOxyz with PostgreSQL and MariaDB
+- The plugin's tests are green on Redmine 7.0-stable-GEOxyz with PostgreSQL
   (numbers in this file); boot, production-like eager load, migrations up/down OK.
 - Every function in the inventory exercised end to end on a real running Redmine, with and
   without permissions and on its failure paths; `./.codex/e2e.sh` green; screenshots looked at,
