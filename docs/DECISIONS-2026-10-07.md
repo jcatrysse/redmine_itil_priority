@@ -31,3 +31,10 @@ What to do:
 7. Update Status, the inventory, the work list and "After the upgrade". Push `redmine70-migration` after every commit.
 8. These decisions are final; do not stop to ask about them. If one turns out to be impossible, write down why in the plan and carry on with the rest.
 9. End with a short report in Dutch: per decision what you did (commit), test numbers, e2e numbers (scenarios, screenshots, problems), the review result, what is left for Jan.
+
+## Round 2, decided by Jan on 2026-10-07 (evening)
+
+Jan answered these follow-up questions from the migration report the same way, one at a time, in the coordinating session.
+
+- redmine_itil_priority-n2-1 (itil 3): Tickets die de helpdesk uit mail maakt, houden hun ingestelde helpdeskprioriteit alleen als het account van die mail het recht 'ITIL-prioriteit overschrijven' heeft. Zonder dat recht krijgen ze de standaardprioriteit, zonder impact en urgentie. Wat wil je?
+  Jan chose: "Helpdeskprioriteit behouden" (Dat account krijgt het recht, zodat helpdesktickets hun ingestelde prioriteit houden zoals vandaag.). Carry this out.
