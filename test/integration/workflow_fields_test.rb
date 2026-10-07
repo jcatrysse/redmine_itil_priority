@@ -38,6 +38,31 @@ class ItilWorkflowFieldsTest < Redmine::IntegrationTest
     assert WorkflowPermission.where(role_id: 2, tracker_id: 1, old_status_id: 1, field_name: 'urgency_id', rule: 'readonly').exists?
   end
 
+  # What redmine_project_workflows does: its own WorkflowsController#permissions,
+  # prepended after this plugin's patch, that builds @fields without super.
+  # Core's list, rebuilt the way core does it.
+  module OtherPluginPermissions
+    def permissions
+      return unless @roles.present? && @trackers.present?
+
+      @fields = (Tracker::CORE_FIELDS_ALL - @trackers.map(&:disabled_core_fields).reduce(:&)).map do |field|
+        [field, l("field_#{field.delete_suffix('_id')}")]
+      end
+      @custom_fields = @trackers.map(&:custom_fields).flatten.uniq.sort
+      @permissions = WorkflowPermission.rules_by_status_id(@trackers, @roles)
+      @statuses.each { |status| @permissions[status.id] ||= {} }
+    end
+  end
+
+  def test_impact_and_urgency_stay_listed_when_another_plugin_replaces_the_action
+    WorkflowsController.prepend(OtherPluginPermissions) unless WorkflowsController <= OtherPluginPermissions
+    log_user('admin', 'admin')
+    get '/workflows/permissions', params: { role_id: 2, tracker_id: 1 }
+    assert_response :success
+    assert_select 'td.name', text: /Impact/
+    assert_select 'td.name', text: /Urgency/, count: 1
+  end
+
   def test_read_only_urgency_cannot_be_changed_and_shows_as_text
     rule(2, 'urgency_id', 'readonly')
     user = User.find(3)

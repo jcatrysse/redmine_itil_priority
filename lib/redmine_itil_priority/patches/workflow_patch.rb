@@ -20,9 +20,20 @@ module RedmineItilPriority
       end
 
       module WorkflowsControllerPatch
-        def permissions
+        # Added when the page renders, not in #permissions: another plugin
+        # (redmine_project_workflows) replaces that action without calling
+        # super, and whichever prepends last wins.
+        def default_render(*)
+          add_itil_priority_fields if action_name == 'permissions'
           super
-          @fields += FIELDS.map { |field| [field, l("field_#{field.delete_suffix('_id')}")] } if @fields
+        end
+
+        private
+
+        def add_itil_priority_fields
+          return if @fields.nil? || @fields.any? { |field, _| FIELDS.include?(field) }
+
+          @fields += FIELDS.map { |field| [field, l("field_#{field.delete_suffix('_id')}")] }
         end
       end
     end
