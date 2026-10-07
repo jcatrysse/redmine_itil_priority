@@ -137,6 +137,27 @@ class ItilOverridePriorityTest < ActiveSupport::TestCase
     assert_equal [nil, nil, true, 8], [issue.impact_id, issue.urgency_id, issue.itil_priority_linked, issue.priority_id]
   end
 
+  # Core's safe_attributes= applies project_id and tracker_id before it drops
+  # unsafe attributes, so the order of the keys cannot sneak impact and urgency
+  # onto a tracker where ITIL is inactive (OpenAI review of 3281330).
+  def test_key_order_cannot_set_impact_on_an_inactive_tracker
+    Setting.where(name: 'plugin_redmine_itil_priority_project_1').delete_all
+    Setting.available_settings['plugin_redmine_itil_priority_project_1'] ||= { 'serialized' => true, 'default' => {} }
+    record = Setting.new(name: 'plugin_redmine_itil_priority_project_1')
+    record.value = { 'tracker_settings' => { '2' => { 'mode' => 'inactive' } } }
+    record.save!
+    RedmineItilPriority.clear_cache
+
+    issue = Issue.new(project_id: 1, author: @helpdesk)
+    issue.send(:safe_attributes=, { 'impact_id' => '3', 'urgency_id' => '2', 'subject' => 'Order', 'tracker_id' => '2' }, @helpdesk)
+    assert_equal 2, issue.tracker_id
+    assert_equal [nil, nil], [issue.impact_id, issue.urgency_id]
+
+    issue = Issue.new(project_id: 1, author: @helpdesk)
+    issue.send(:safe_attributes=, { 'impact_id' => '3', 'urgency_id' => '2', 'subject' => 'Order', 'tracker_id' => '1' }, @helpdesk)
+    assert_equal [3, 2], [issue.impact_id, issue.urgency_id]
+  end
+
   def test_impact_and_urgency_are_not_assignable_without_the_module
     Project.find(1).disable_module!(:itil_priority)
     RedmineItilPriority.clear_cache

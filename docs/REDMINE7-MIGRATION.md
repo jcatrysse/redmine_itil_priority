@@ -24,7 +24,7 @@ what is left. Written 2026-10-06 from a measured analysis (report at the bottom)
 | Complexity (1 trivial .. 5 rewrite) | 1 |
 | Measured on | Redmine 7.0.1 (7.0-stable-GEOxyz + latest 7.0-stable), Rails 8.1.3.1, Ruby 3.3.6, PostgreSQL 16 and MariaDB 10.11 |
 | Branch head when this file was written | `d30ddf9` |
-| Migration session | 2026-10-06, done: work list complete, tests and e2e green on PostgreSQL and MariaDB, OpenAI review no findings |
+| Migration session | 2026-10-06, done; 2026-10-07 Jan's decisions built (prepend instead of alias_method, explanation per level), checked with all GEOxyz plugins installed |
 
 ## Already on this branch
 
@@ -114,6 +114,8 @@ Actions the person doing the upgrade must take, or know about, for this plugin:
 - Optional: in Administration > Workflow > Fields permissions, make Impact and/or Urgency required or read-only where wanted.
 - Optional: fill in the explanation texts (Administration > Plugins > ITIL priority, or per project and tracker in Custom mode).
 - Webhooks: nothing to do; issue payloads now include impact_id, urgency_id and itil_priority_linked.
+- Explanations: one text per level of impact and urgency (six fields) in the plugin settings, and per tracker in Custom mode on the project tab. Empty by default: no icon and no text until filled in.
+- RedmineUP helpdesk: tickets it creates for a sender without "Override ITIL priority" get Redmine's default priority instead of the helpdesk's configured one (decision for Jan, see "Decided by Jan" item 6).
 - Issues whose priority was set by hand before the upgrade are stored as linked (the flag did not exist); the next edit through the form recalculates them, as it did before. Re-unlink them if needed.
 
 ## Inventory of functions
@@ -127,7 +129,7 @@ Screenshots in `docs/e2e/` (PostgreSQL run, Redmine 7.0-stable-GEOxyz, productio
 | Issue form: impact x urgency gives the priority, live | new/edit issue | issue_form.mjs, core | issue_form-new-linked, -created, core-new-issue-form |
 | Unlink / set priority by hand / link again (operator) | link icon on the form (permission "Override ITIL priority") | issue_form.mjs | issue_form-unlinked-edit, -unlinked-history, -unlinked-reopened, -relinked |
 | Helpdesk user: impact and urgency only | form without the permission | issue_form.mjs | issue_form-helpdesk-edit, -helpdesk-saved, -helpdesk-new, -helpdesk-created |
-| Info icons with level explanations | icon next to Impact/Urgency on the form | issue_form.mjs, settings.mjs | issue_form-help-impact, settings-form-custom |
+| Explanation per level (Jan 2026-10-07): text of the chosen level under the field, all three behind the info icon; per instance and per tracker | issue form; plugin settings; project tab | issue_form.mjs, settings.mjs | issue_form-help-current, -help-impact, -help-helpdesk, settings-global, settings-project-tab, settings-form-custom |
 | History labels and link Yes/No | issue page, history | issue_form.mjs, issue_list.mjs | issue_form-unlinked-history, -relinked, issue_list-context-menu-applied |
 | Columns and filters Impact / Urgency | issue list, options and filters | issue_list.mjs | issue_list-columns-filter, -bulk-edit-result |
 | Context menu Urgency / Impact | right click in the issue list; no Priority without the permission | issue_list.mjs, core | issue_list-context-menu-operator, -context-menu-helpdesk, -context-menu-applied, core-context-menu |
@@ -140,7 +142,21 @@ Screenshots in `docs/e2e/` (PostgreSQL run, Redmine 7.0-stable-GEOxyz, productio
 | Outsider: private project invisible | non-member | issue_form.mjs, core | issue_form-outsider-refused, core-private-refused |
 | Upgrade path: migrations 003/004 on an existing database | `rake redmine:plugins:migrate` | start_server on the baseline database, rollback test | (log, see Result) |
 
+| Together with all GEOxyz plugins: Project > Settings, issue list, issue page, inbound mail, REST API, webhook, workflow | every page, 41 other plugins installed | all scenarios | docs/e2e/all-plugins/ (README there), docs/e2e/all-plugins/without-dcf/ |
+
 No rake tasks, cron jobs or macros in this plugin.
+
+## Result (2026-10-07, after Jan's decisions)
+
+PostgreSQL 16 only (Jan, 2026-10-07). Redmine 7.0-stable-GEOxyz.
+
+| | this plugin alone | with 40 other GEOxyz plugins |
+|---|---|---|
+| minitest | 64 runs, 313 assertions, 0 failures | 63 runs, 310 assertions, 0 failures (before the last added test) |
+| rspec | 60 examples, 0 failures | 60 examples, 0 failures |
+| e2e | smoke 13, core 6, 7 scenarios, 59 screenshots, 0 problems (`docs/e2e/`) | all 42 except redmine_issue_field_visibility: 61 screenshots; 0 problems except Project > Settings 500 from redmine_depending_custom_fields (`docs/e2e/all-plugins/`); without that plugin too: smoke and settings 0 problems, Project > Settings 200 (`docs/e2e/all-plugins/without-dcf/`) |
+
+Left out of the combined runs, not this plugin's problems: redmine_issue_field_visibility (alias chain on IssueQuery#initialize_available_filters recursing with redmine_agile, breaks already `rake redmine:load_default_data`), redmine_depending_custom_fields (its tab helper is missing from ProjectsController's helpers; Project > Settings 500 with or without this plugin's change).
 
 ## Result (2026-10-06)
 
@@ -166,6 +182,8 @@ Combined run: redmine70-migration branches of redmine_issue_field_visibility, re
   - range 51cd4c0..b944f8d: "No findings" in both parts (`docs/reviews/openai-2026-10-06-b944f8d.md`).
   - range 51cd4c0..fae24d3 (after the docs): 3 major, 1 minor (`docs/reviews/openai-2026-10-06-fae24d3.md`, each with a Resolution line). Accepted and fixed: impact, urgency and the link were assignable through the API or a mixed bulk edit where ITIL is inactive (pre-existing), now dropped from the safe attributes there, with tests. Not needed: the context-menu finding (the hook already renders only when every selected issue has ITIL active). Not changed: the kit's CI workflow uploads redmine/log, which only holds throwaway test credentials; a point for the migration kit.
   - range 51cd4c0..b973017 (after the fix): the same minor CI-log point again, and one "major" on test/unit/settings_cache_test.rb that is a false positive (Redmine's Setting writes its YAML itself, no AR serialize; the test passes on both databases). Nothing new accepted, so the review loop stops here (`docs/reviews/openai-2026-10-06-b973017.md`).
+
+- OpenAI review after Jan's decisions, two runs: 6d37772: two findings in tests (a test left a prepended module active for later tests; webhook scenario without a non-loopback address), both fixed in 3281330. 3281330: one claimed order dependence of impact/urgency on an inactive tracker, disproved with a test (core assigns tracker_id before filtering unsafe attributes), and the known CI-log point for the kit. Nothing new accepted. `docs/reviews/openai-2026-10-07-*.md`.
 
 ## Decided by Jan
 
