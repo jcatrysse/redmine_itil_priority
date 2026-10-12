@@ -50,6 +50,12 @@ Setting.include RedmineItilPriority::Patches::SettingPatch
 MailHandler.prepend RedmineItilPriority::Patches::MailHandlerPatch
 WorkflowPermission.prepend RedmineItilPriority::Patches::WorkflowPatch::WorkflowPermissionPatch
 WorkflowsController.prepend RedmineItilPriority::Patches::WorkflowPatch::WorkflowsControllerPatch
+# Impact and urgency on redmine_project_workflows' own Fields permissions matrices too
+# (its extension point). A plain hash write: works in any load order, and without that
+# plugin installed nothing reads it.
+RedmineItilPriority::Patches::WorkflowPatch::FIELDS.each do |name|
+  Rails.configuration.x.project_workflow_permission_fields[name] = true
+end
 # Only with RedmineUP's helpdesk installed (it loads before this plugin).
 if Redmine::Plugin.installed?(:redmine_contacts_helpdesk)
   HelpdeskMailRecipient::IssueRecipient.prepend RedmineItilPriority::Patches::HelpdeskPatch::IssueRecipientPatch
