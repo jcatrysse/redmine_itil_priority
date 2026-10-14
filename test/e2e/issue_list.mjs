@@ -9,12 +9,28 @@ const fail = (m) => t.problems.push(m);
 
 await t.login('manager');
 // columns and a filter through the URL, the way a saved query does it
-await t.go(`/projects/${P}/issues?set_filter=1&f[]=status_id&op[status_id]=o&f[]=impact_id&op[impact_id]=*&c[]=tracker&c[]=subject&c[]=priority&c[]=impact_id&c[]=urgency_id&sort=id:desc`);
+const listUrl = `/projects/${P}/issues?set_filter=1&f[]=status_id&op[status_id]=o&f[]=impact_id&op[impact_id]=*&c[]=tracker&c[]=subject&c[]=priority&c[]=impact_id&c[]=urgency_id&sort=id:desc`;
+await t.go(listUrl);
 const header = await t.page.locator('table.issues thead').innerText();
 if (!/Impact/.test(header) || !/Urgency/.test(header)) fail('list: Impact/Urgency columns missing');
 const filterOptions = await t.page.locator('#add_filter_select option').allInnerTexts();
 if (!filterOptions.includes('Impact') || !filterOptions.includes('Urgency')) fail('list: Impact/Urgency filters missing');
 await t.shot('columns-filter', 'Issue list with the Impact and Urgency columns (labels, not numbers) and the filter "Impact: any"');
+
+// the filter's values load when it is added, as core's own list filters
+await t.go(`/projects/${P}/issues?set_filter=1&f[]=status_id&op[status_id]=o&c[]=subject&c[]=urgency_id`);
+await t.page.selectOption('#add_filter_select', 'urgency_id');
+await t.page.waitForSelector('#values_urgency_id_1 option:text-is("Urgent")', { state: 'attached' });
+const urgencyValues = await t.page.locator('#values_urgency_id_1 option').allInnerTexts();
+if (urgencyValues.join('|') !== 'Not urgent|Normal|Urgent') fail(`list: urgency filter values ${urgencyValues.join('|')}`);
+await t.page.selectOption('#values_urgency_id_1', '3');
+await t.page.click('#query_form_with_buttons a.icon-checked, #query_form_with_buttons p.buttons a:first-child');
+await t.settle();
+const urgencyCells = await t.page.locator('table.issues td.urgency_id').allInnerTexts();
+if (!urgencyCells.length || urgencyCells.some((c) => c.trim() !== 'Urgent')) fail(`list: urgency filter gave ${urgencyCells.join('|')}`);
+t.check('urgency filter added in the form');
+await t.shot('filter-added', 'Urgency filter added in the form: its labels load on demand, "Urgent" keeps only urgent issues');
+await t.go(listUrl);
 
 // context menu as operator: Priority, Urgency and Impact
 await t.page.click('table.issues tr.issue td.tracker >> nth=0', { button: 'right' });

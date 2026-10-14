@@ -66,8 +66,16 @@ RSpec.describe RedmineItilPriority::Patches::IssueQueryPatch do
 
       def initialize_available_filters; end
 
+      # As core's QueryFilter: a Proc for the values is called when they are asked.
+      Filter = Struct.new(:options) do
+        def [](key)
+          value = options[key]
+          key == :values && value.is_a?(Proc) ? value.call : value
+        end
+      end
+
       def add_available_filter(field, options)
-        available_filters[field] = options
+        available_filters[field] = Filter.new(options)
       end
 
       def available_columns

@@ -53,10 +53,11 @@ module RedmineItilPriority
         super
         return unless RedmineItilPriority.enabled_for_project?(project)
 
+        # Lazy, as core's own list filters: only computed when shown or used.
         add_available_filter 'impact_id', type: :list_optional, label: :label_impact,
-                                          values: RedmineItilPriority.impact_options(project, nil)
+                                          values: -> { RedmineItilPriority.impact_options(project, nil) }
         add_available_filter 'urgency_id', type: :list_optional, label: :label_urgency,
-                                           values: RedmineItilPriority.urgency_options(project, nil)
+                                           values: -> { RedmineItilPriority.urgency_options(project, nil) }
       end
 
       def available_columns

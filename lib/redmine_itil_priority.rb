@@ -19,8 +19,7 @@ module RedmineItilPriority
 
   def clear_cache
     Rails.cache.delete_matched(/\A#{CACHE_PREFIX}\//)
-    @settings_cache&.clear
-    @enabled_cache&.clear
+    clear_memo
   end
 
   # The in-process memos live for one request: core calls Setting.check_cache
@@ -28,6 +27,10 @@ module RedmineItilPriority
   def clear_memo
     @settings_cache&.clear
     @enabled_cache&.clear
+    @project_settings_cache&.clear
+    @projects_cache&.clear
+    @enabled_project_ids = nil
+    @global_settings = nil
   end
 
   def log(message = nil, level: :info, &block)
@@ -40,66 +43,107 @@ module RedmineItilPriority
   end
 
   def global_settings
-    Rails.cache.fetch(cache_key('global_settings')) do
+    @global_settings ||= Rails.cache.fetch(cache_key('global_settings')) do
       Setting['plugin_redmine_itil_priority'] || {}
     end.deep_dup
+    @global_settings.deep_dup
+  end
+
+  def project_settings_key(project_id)
+    key = "plugin_redmine_itil_priority_project_#{project_id}"
+    Setting.available_settings[key] ||= { 'serialized' => true, 'default' => {} }
+    key
   end
 
   def project_settings(project)
-    key = "plugin_redmine_itil_priority_project_#{project.id}"
-    Setting.available_settings[key] ||= { 'serialized' => true, 'default' => {} }
+    key = project_settings_key(project.id)
+    return @project_settings_cache[project.id].deep_dup if @project_settings_cache&.key?(project.id)
+
     Rails.cache.fetch(cache_key('project_settings', project.id)) do
       Setting.find_by(name: key)&.value || {}
     end.deep_dup
   end
 
+  # The settings of many projects in one query, kept for the request, so a
+  # list over every project costs the same with 10 projects as with 1000.
+  def preload_project_settings(projects)
+    return unless Setting.respond_to?(:where)
+
+    @project_settings_cache ||= {}
+    missing = projects.map(&:id).uniq - @project_settings_cache.keys
+    return if missing.empty?
+
+    keys = missing.index_by { |id| project_settings_key(id) }
+    found = Setting.where(name: keys.keys).to_h { |setting| [keys[setting.name], setting.value || {}] }
+    missing.each { |id| @project_settings_cache[id] = found[id] || {} }
+  end
+
+  # Ids of the projects with the module enabled, one query per request.
+  def enabled_project_ids
+    @enabled_project_ids ||= EnabledModule.where(name: 'itil_priority').distinct.pluck(:project_id).to_set
+  end
+
+  def module_enabled?(project)
+    return project.module_enabled?(:itil_priority) unless defined?(EnabledModule)
+
+    enabled_project_ids.include?(project.id)
+  end
+
   # Returns settings hash for a project+tracker or nil when disabled.
-  def settings_for(project, tracker)
+  # module_checked: from itil_projects, which checked the module and preloaded
+  # the project settings; no Rails.cache read per tracker then.
+  def settings_for(project, tracker, module_checked: false)
     return nil unless project && tracker
-    return nil unless project.module_enabled?(:itil_priority)
+    return nil unless module_checked || project.module_enabled?(:itil_priority)
 
     @settings_cache ||= {}
     cache_id = [project.id, tracker.id]
     return @settings_cache[cache_id] if @settings_cache.key?(cache_id)
 
-    ckey = cache_key('settings', project.id, tracker.id)
-
-    @settings_cache[cache_id] = Rails.cache.fetch(ckey) do
-      global = global_settings
-      default_mode = global.delete('default_tracker_mode') || 'default'
-
-      pset = project_settings(project)
-      tset = pset['tracker_settings']
-
-      # No project-level settings saved yet => use global based on default mode
-      if tset.blank?
-        log("[ITIL] settings_for: project=#{project.identifier} has no project settings")
-        next nil if default_mode == 'inactive'
-        next global.deep_dup
-      end
-
-      tr = tset[tracker.id.to_s]
-      if tr.blank?
-        log("[ITIL] settings_for: tracker #{tracker.id} not configured for project=#{project.identifier}")
-        next nil if default_mode == 'inactive'
-        next global.deep_dup
-      end
-
-      mode = tr['mode'] || 'custom'
-      log("[ITIL] settings_for: project=#{project.identifier} tracker=#{tracker.id} mode=#{mode}")
-      case mode
-      when 'inactive'
-        nil
-      when 'default'
-        global.deep_dup
+    @settings_cache[cache_id] =
+      if module_checked
+        merge_settings(project, tracker, global_settings)
       else
-        merged = global.deep_dup
-        tr.each do |k, v|
-          next if k == 'mode'
-          merged[k] = v unless v.blank?
+        Rails.cache.fetch(cache_key('settings', project.id, tracker.id)) do
+          merge_settings(project, tracker, global_settings)
         end
-        merged
       end
+  end
+
+  def merge_settings(project, tracker, global)
+    default_mode = global.delete('default_tracker_mode') || 'default'
+
+    pset = project_settings(project)
+    tset = pset['tracker_settings']
+
+    # No project-level settings saved yet => use global based on default mode
+    if tset.blank?
+      log("[ITIL] settings_for: project=#{project.identifier} has no project settings")
+      return nil if default_mode == 'inactive'
+      return global.deep_dup
+    end
+
+    tr = tset[tracker.id.to_s]
+    if tr.blank?
+      log("[ITIL] settings_for: tracker #{tracker.id} not configured for project=#{project.identifier}")
+      return nil if default_mode == 'inactive'
+      return global.deep_dup
+    end
+
+    mode = tr['mode'] || 'custom'
+    log("[ITIL] settings_for: project=#{project.identifier} tracker=#{tracker.id} mode=#{mode}")
+    case mode
+    when 'inactive'
+      nil
+    when 'default'
+      global.deep_dup
+    else
+      merged = global.deep_dup
+      tr.each do |k, v|
+        next if k == 'mode'
+        merged[k] = v unless v.blank?
+      end
+      merged
     end
   end
 
@@ -140,23 +184,37 @@ module RedmineItilPriority
     cache_id = project ? project.id : :all
     return @enabled_cache[cache_id] if @enabled_cache.key?(cache_id)
 
-    @enabled_cache[cache_id] = if project
-                                  projects = if project.respond_to?(:self_and_descendants)
-                                               project.self_and_descendants.includes(:trackers)
-                                             else
-                                               project.trackers.load
-                                               [project]
-                                             end
-                                  projects.any? do |proj|
-                                    next false unless proj.module_enabled?(:itil_priority)
-                                    proj.trackers.any? { |t| settings_for(proj, t) }
-                                  end
-                                else
-                                  return true unless defined?(Project)
-                                  Project.active.has_module(:itil_priority).includes(:trackers).any? do |proj|
-                                    proj.trackers.any? { |t| settings_for(proj, t) }
-                                  end
-                                end
+    return true if project.nil? && !defined?(Project)
+
+    @enabled_cache[cache_id] = itil_projects(project).any? do |proj|
+      proj.trackers.any? { |t| settings_for(proj, t, module_checked: true) }
+    end
+  end
+
+  # The projects with the module enabled that a list over the project covers
+  # (it and its subprojects, or every active project without one), their
+  # trackers loaded and settings preloaded: the same number of queries
+  # whatever the number of projects, once per request.
+  def itil_projects(project)
+    @projects_cache ||= {}
+    cache_id = project.nil? ? :all : (project.id if project.respond_to?(:self_and_descendants))
+    return @projects_cache[cache_id] if cache_id && @projects_cache.key?(cache_id)
+
+    projects =
+      if project.nil?
+        defined?(Project) ? Project.active.has_module(:itil_priority).includes(:trackers).to_a : []
+      elsif project.respond_to?(:self_and_descendants)
+        project.self_and_descendants.includes(:trackers).select { |proj| module_enabled?(proj) }
+      elsif project.respond_to?(:each)
+        arr = project.to_a
+        preload_trackers(arr)
+        arr.select { |proj| proj.module_enabled?(:itil_priority) }
+      else
+        project.trackers.load
+        [project].select { |proj| proj.module_enabled?(:itil_priority) }
+      end
+    preload_project_settings(projects)
+    cache_id ? (@projects_cache[cache_id] = projects) : projects
   end
 
   # Rails 7 (Redmine 6.0 and later) replaced Preloader.new.preload(records,
@@ -175,27 +233,9 @@ module RedmineItilPriority
     labels = Hash.new { |h, k| h[k] = Set.new }
 
     if tracker.nil?
-      projects =
-        if project.nil?
-          if defined?(Project)
-            Project.active.has_module(:itil_priority).includes(:trackers)
-          else
-            []
-          end
-        elsif project.respond_to?(:self_and_descendants)
-          project.self_and_descendants.includes(:trackers)
-        elsif project.respond_to?(:each)
-          arr = project.to_a
-          preload_trackers(arr)
-          arr
-        else
-          project.trackers.load
-          [project]
-        end
-
-      projects.each do |proj|
+      itil_projects(project).each do |proj|
         proj.trackers.each do |t|
-          settings = settings_for(proj, t)
+          settings = settings_for(proj, t, module_checked: true)
           next unless settings
           [1, 2, 3].each do |i|
             key = "label_#{type}_#{i}"

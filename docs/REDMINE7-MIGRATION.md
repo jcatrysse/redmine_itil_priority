@@ -92,6 +92,10 @@ In this order: things that break, security, the GEOxyz changes, the open items, 
 21. Impact and Urgency missing from Workflow > Fields permissions with redmine_project_workflows: that plugin replaces WorkflowsController#permissions without super and loads later. Fixed here: the rows are added at render time (6ee3baf). **Still open in redmine_project_workflows**: its PermissionWriter whitelists only core field names (`Tracker::CORE_FIELDS_ALL` + custom fields), so with it installed a saved Impact/Urgency rule is dropped. That plugin must accept the field names WorkflowPermission accepts (e.g. by validating through WorkflowPermission).
 22. Explanation per level (Jan's choice B), 1aa2729.
 
+**Performance (2026-10-14, all GEOxyz plugins on Redmine 7)**
+
+23. Every IssueQuery (issue list, gantt, my page) computed the Impact and Urgency filter values at once: per project with the module a `module_enabled?` query, per project and tracker a Rails.cache read (measured: issue list -90 ms, gantt -98 ms, my page -30 ms). Now the values are a lambda, as core's own list filters (computed only when the filter is shown or used; like core's, they load when the filter is added in the form), and the projects with the module, their trackers and project settings are read once per request (`itil_projects`, cleared by `Setting.check_cache`). Queries of one IssueQuery with its filter values, `test/unit/filter_performance_test.rb`: before 41 with 5 extra projects and 61 with 10 (51 and 71 for a project with 5 and 10 subprojects), now 10 and 10 (13 and 13).
+
 Recursions found with all GEOxyz plugins that are **not in this plugin** (alias chain mixed with prepends, each plugin's own session fixes it): redmine_extended_api `Issue#safe_attributes=` (fixed in that branch during this session), redmine_tint_issues `Issue#css_classes` (fixed during this session), redmine_issue_field_visibility `IssueQuery#initialize_available_filters` with redmine_agile (still open at the time of the run: stack overflow already in `rake redmine:load_default_data`, so it was left out of the combined run).
 
 **Left (not done, with reason)**
@@ -151,6 +155,10 @@ Screenshots in `docs/e2e/` (PostgreSQL run, Redmine 7.0-stable-GEOxyz, productio
 | Together with all GEOxyz plugins: Project > Settings, issue list, issue page, inbound mail, REST API, webhook, workflow | every page, 41 other plugins installed | all scenarios | docs/e2e/all-plugins/ (README there), docs/e2e/all-plugins/without-dcf/ |
 
 No rake tasks, cron jobs or macros in this plugin.
+
+## Result (2026-10-14, performance)
+
+Redmine 7.0-stable-GEOxyz `8dc5e73` (Rails 8.1.4), PostgreSQL 16. Plugin alone: minitest 79 runs, 344 assertions, 0 failures, 2 skips (real-helpdesk tests); rspec 60 examples, 0 failures; e2e smoke 13, core 6, scenarios 0 problems (issue_list now also adds the Urgency filter in the form, `docs/e2e/issue_list-filter-added.png`). With the 40 other GEOxyz plugins: minitest 79 runs, 348 assertions, 0 failures, 0 skips; rspec 60 examples, 0 failures.
 
 ## Result (2026-10-07, after Jan's decisions)
 
